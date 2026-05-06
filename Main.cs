@@ -13,7 +13,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 var rootCommand = Cli.Parse<RootCommand>().Bind<RootCommand>();
 
-CliGlobalSettings globalSettings = new(rootCommand.Verbose, rootCommand.NoCache);
+CliGlobalFlags globalFlags = new(rootCommand.Verbose, rootCommand.NoCache);
 
 Cli.Ext.ConfigureServices(services =>
 {
@@ -24,8 +24,8 @@ Cli.Ext.ConfigureServices(services =>
         ReferenceHandler = ReferenceHandler.IgnoreCycles,
         TypeInfoResolver = LicensifyJsonSerializerContext.Default
     })
-    .AddSingleton(globalSettings)
-    .AddSingleton<ILicenseDatabase, JsonLicenseDatabase>()
+    .AddSingleton(globalFlags)
+    .AddSingleton<ICacher, MessagePackCacher>()
     .AddSingleton<LicensifyYamlContext>()
     .AddSingleton(services =>
     {

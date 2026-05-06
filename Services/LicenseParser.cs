@@ -7,19 +7,12 @@ namespace Licensify.Services;
 
 public interface ILicenseParser
 {
-    public Func<string, bool>? GetOptionalParts { get; set; }
-    public Func<string>? GetName { get; set; }
-    public Func<string?>? GetSurname { get; set; }
     public string Parse(string license);
 }
 
-public partial class LicenseParser(CliGlobalSettings globalFlags, IConfigService settings) : ILicenseParser
+public partial class LicenseParser(IConfigService configService) : ILicenseParser
 {
-    public Func<string, bool>? GetOptionalParts { get; set; }
-    public Func<string>? GetName { get; set; }
-    public Func<string?>? GetSurname { get; set; }
-
-    public string Parse(string license)
+    public string Parse(IAsker asker, string license)
     {
         var localLicense = license;
         localLicense = OptionalParts().Replace(localLicense, ParseOptionalParts);
@@ -27,8 +20,9 @@ public partial class LicenseParser(CliGlobalSettings globalFlags, IConfigService
 
         return localLicense;
     }
+}
 
-    private string ParseOptionalParts(Match match)
+    /*private string ParseOptionalParts(Match match)
     {
         var optionalText = match.Groups[1].ToString();
         if (GetOptionalParts?.Invoke(optionalText) ?? true) return optionalText;
@@ -107,5 +101,5 @@ public partial class SpdxVariable : INullable
     private static partial Regex MatchPart();
 
     [GeneratedRegex(@"example=""(.*?)""", RegexOptions.IgnoreCase)]
-    private static partial Regex ExamplePart();
-}
+    private static partial Regex ExamplePart(); 
+} */

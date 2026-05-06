@@ -1,20 +1,22 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Licensify.Services;
+using PolyType;
 using YamlDotNet.Serialization;
 
 namespace Licensify;
 
-public record CliGlobalSettings(
+public record CliGlobalFlags(
     bool Verbose,
     bool ForceNoCache
 );
+
 
 public record LicenseListManifest(
     [property: JsonPropertyName("licenseListVersion")] string Version,
     IReadOnlyList<LicenseListEntry> Licenses
 );
 
+[GenerateShape]
 public record LicenseListEntry(
     string Reference,
     bool IsDeprecatedLicenseId,
@@ -25,7 +27,9 @@ public record LicenseListEntry(
     IReadOnlyList<string> SeeAlso,
     bool IsOsiApproved,
     bool IsFsfLibre
-);
+) {
+    [JsonIgnore] public LicenseEntry? AttachedLicense { get; set; }
+};
 
 public record LicenseEntry(
     bool IsDeprecatedLicenseId,
@@ -50,9 +54,9 @@ public record CrossRef(
 );
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(Dictionary<string, JsonElement>))]
 [JsonSerializable(typeof(LicenseListManifest))]
 [JsonSerializable(typeof(LicenseListEntry))]
-[JsonSerializable(typeof(Dictionary<string, JsonElement>))]
 [JsonSerializable(typeof(LicenseEntry))]
 [JsonSerializable(typeof(CrossRef))]
 public partial class LicensifyJsonSerializerContext : JsonSerializerContext;

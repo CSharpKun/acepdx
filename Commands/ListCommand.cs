@@ -7,7 +7,7 @@ namespace Licensify.Commands;
 [CliCommand(
     Description = "Lists all licenses in a table."
 )]
-public class ListCommand(ILicenseDatabase database)
+public class ListCommand(ICacher database)
 {
     public async Task RunAsync()
     {

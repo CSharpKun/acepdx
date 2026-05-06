@@ -17,9 +17,7 @@ public class AddCommand(ILicenseParser parser)
 
     public async Task RunAsync()
     {
-        parser.GetOptionalParts = GetOptionalParts;
-        parser.GetName = GetName;
-        parser.GetSurname = GetSurname;
+        
     }
 
     private bool GetOptionalParts(string optionalText)

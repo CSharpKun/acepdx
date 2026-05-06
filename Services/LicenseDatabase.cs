@@ -5,14 +5,14 @@ using Spectre.Console;
 
 namespace Licensify.Services;
 
-public interface ILicenseDatabase
+public interface ICacher
 {
     public Task<T?> GetData<T>(string name, CancellationToken token = default) where T : class;
 }
 
 [UnconditionalSuppressMessage("Trimming", "IL2026")]
 [UnconditionalSuppressMessage("AOT", "IL3050")]
-public class JsonLicenseDatabase(IHttpClientFactory httpFactory, JsonSerializerOptions options, CliGlobalSettings globalFlags, IConfigService settings) : ILicenseDatabase
+public class MessagePackCacher(JsonSerializerOptions options, CliGlobalFlags globalFlags, IHttpService httpService, IConfigService settings) : ICacher
 {
     private static string ApplicationFolder { get; } = 
     Path.Combine(
@@ -20,10 +20,10 @@ public class JsonLicenseDatabase(IHttpClientFactory httpFactory, JsonSerializerO
         "licensify"
     );
 
-    private static string DatabaseFile { get; } = 
+    private static string CacheFile { get; } = 
     Path.Combine(
         ApplicationFolder,
-        "database.json"
+        "cache"
     );
 
     public async Task<T?> GetData<T>(string name, CancellationToken token = default) where T : class
@@ -46,7 +46,7 @@ public class JsonLicenseDatabase(IHttpClientFactory httpFactory, JsonSerializerO
 
         var url = repo == "github" && name != "licenses.json" ? "details/" + name : name;
 
-        var fetchResult = await GetJsonRequest<T>(url, repo, token);
+        var fetchResult = await httpService.GetJsonRequest<T>(url, repo, token);
         if (fetchResult is null) return fetchResult;
 
         cacheResult ??= [];
@@ -58,14 +58,14 @@ public class JsonLicenseDatabase(IHttpClientFactory httpFactory, JsonSerializerO
     private bool TryGetFromCache<T>(out T? result)
     {
         Directory.CreateDirectory(ApplicationFolder);
-        var isFileOld = File.GetLastWriteTime(DatabaseFile) < DateTime.Now - TimeSpan.FromHours(10);
-        if (!File.Exists(DatabaseFile) || isFileOld)
+        var isFileOld = File.GetLastWriteTime(CacheFile) < DateTime.Now - TimeSpan.FromHours(10);
+        if (!File.Exists(CacheFile) || isFileOld)
         {
             result = default;
             return false;
         } 
 
-        var json = File.ReadAllText(DatabaseFile);
+        var json = File.ReadAllText(CacheFile);
 
         try
         {
@@ -80,47 +80,11 @@ public class JsonLicenseDatabase(IHttpClientFactory httpFactory, JsonSerializerO
                 AnsiConsole.MarkupLine("[grey]Couldn't parse cache JSON[/]");
                 AnsiConsole.WriteException(ex);
             }
-            File.Delete(DatabaseFile);
+            File.Delete(CacheFile);
             result = default;
             return false;
         }   
     }
 
-    private void WriteToCache(object obj) => File.WriteAllText(DatabaseFile, JsonSerializer.Serialize(obj, options));
-
-    private async Task<T?> GetJsonRequest<T>(string url, string clientName, CancellationToken token)
-    {
-        var client = httpFactory.CreateClient(clientName);
-        
-        try
-        {    
-            return await client.GetFromJsonAsync<T>(url, options, token);
-        }
-        catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
-        {
-            if (globalFlags.Verbose)
-            {
-                AnsiConsole.MarkupLine($"[red]Fetch to url {url} failed because of the timeout[/]");
-                AnsiConsole.WriteException(ex);  
-            } 
-        }
-        catch (HttpRequestException ex)
-        {
-            if (globalFlags.Verbose)
-            {
-                AnsiConsole.MarkupLine($"[red]Failed to fetch data from url {url}[/]");
-                AnsiConsole.WriteException(ex); 
-            }
-        }
-        catch (JsonException ex)
-        {
-            if (globalFlags.Verbose)
-            {
-                AnsiConsole.MarkupLine($"[red]Failed to deserialize data from url {url}[/]");
-                AnsiConsole.WriteException(ex); 
-            }
-        }
-
-        return default;
-    }
+    private void WriteToCache(object obj) => File.WriteAllText(CacheFile, JsonSerializer.Serialize(obj, options));
 }

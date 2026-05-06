@@ -27,13 +27,13 @@ public class YamlConfigService : IConfigService
 
     private readonly IDeserializer _deserializer;
     private readonly ISerializer _serializer;
-    private readonly CliGlobalSettings _globalConfig;
+    private readonly CliGlobalFlags _globalFlags;
 
-    public YamlConfigService(IDeserializer deserializer, ISerializer serializer, CliGlobalSettings globalConfig)
+    public YamlConfigService(IDeserializer deserializer, ISerializer serializer, CliGlobalFlags globalFlags)
     {
         _deserializer = deserializer;
         _serializer = serializer;
-        _globalConfig = globalConfig;
+        _globalFlags = globalFlags;
 
         if (!File.Exists(ConfigFile))
         {
@@ -59,7 +59,7 @@ public class YamlConfigService : IConfigService
                 }
                 else
                 {
-                    if (_globalConfig.Verbose) AnsiConsole.MarkupLine(
+                    if (_globalFlags.Verbose) AnsiConsole.MarkupLine(
                         $"[b, red]Couldn't parse Key-Value Pair because of incorrect formatting: array's length is {keys.Length}");
                     continue;
                 }
@@ -82,14 +82,16 @@ public class YamlConfigService : IConfigService
                 outerKey = keys[0];
                 innerKey = keys[1];
             }
-            else if (keys.Length is 3) 
+            else if (keys.Length > 3) 
             {
-                outerKey = keys[0] + $" \"{keys[1]}\"";
-                innerKey = keys[2];
+                string subgroups = "";
+                foreach (var subgroup in keys[1..^1]) subgroups += subgroup + (subgroup == keys[^2] ? "" : '.'); 
+                outerKey = keys[0] + $" \"{subgroups}\"";
+                innerKey = keys[^1];
             } 
             else 
             {
-                if (_globalConfig.Verbose) AnsiConsole.MarkupLine(
+                if (_globalFlags.Verbose) AnsiConsole.MarkupLine(
                     $"[b, red]Couldn't parse Key-Value Pair because of incorrect formatting: array's length is {keys.Length}");
                 continue;
             } 

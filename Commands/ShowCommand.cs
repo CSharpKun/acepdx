@@ -9,7 +9,7 @@ namespace Licensify.Commands;
     Description = "Shows information about specified license.",
     Alias = "get"
 )]
-public class ShowCommand(ILicenseDatabase database)
+public class ShowCommand(ICacher database)
 {
     [CliArgument(Description = "License's short id.", Required = true)]
     public string LicenseId { get; set; } = null!;
