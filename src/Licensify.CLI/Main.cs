@@ -6,45 +6,27 @@ using System.Reflection;
 using System.Text.Json;
 using DotMake.CommandLine;
 using Licensify.Commands;
-using Licensify.Services;
 using Licensify;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Licensify.Core.Services;
+using Licensify.Core;
+using Licensify.Core.Interfaces;
 
 var rootCommand = Cli.Parse<RootCommand>().Bind<RootCommand>();
 
-CliGlobalFlags globalFlags = new(rootCommand.Verbose, rootCommand.NoCache);
-
 Cli.Ext.ConfigureServices(services =>
 {
-    services.AddSingleton<JsonSerializerOptions>(_ => new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        ReferenceHandler = ReferenceHandler.IgnoreCycles,
-        TypeInfoResolver = LicensifyJsonSerializerContext.Default
-    })
-    .AddSingleton(globalFlags)
-    .AddSingleton<ICacher, MessagePackCacher>()
-    .AddSingleton<LicensifyYamlContext>()
-    .AddSingleton(services =>
-    {
-        return new StaticSerializerBuilder(services.GetRequiredService<LicensifyYamlContext>())
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .Build();
-    })
-    .AddSingleton(services =>
-    {
-        return new StaticDeserializerBuilder(services.GetRequiredService<LicensifyYamlContext>())
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .Build();
-    })
+    services
+    //.AddSingleton<ICacher, MessagePackCacher>()
+    .AddSingleton<ILicenseHttpService, SpdxHttpService>()
+    .AddSingleton<IConfigService, YamlConfigService>()
     .AddSingleton<ILicenseParser, LicenseParser>();
 
     var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
     var clientInfo = new ProductInfoHeaderValue("Licensify", version);
 
-    services.AddHttpClient("spdx", client =>
+    /*services.AddHttpClient("spdx", client =>
     {
         client.Timeout = TimeSpan.FromSeconds(30);
         client.BaseAddress = new("https://spdx.org/licenses/");
@@ -56,7 +38,9 @@ Cli.Ext.ConfigureServices(services =>
         client.Timeout = TimeSpan.FromSeconds(30);
         client.BaseAddress = new("https://raw.githubusercontent.com/spdx/license-list-data/main/json/");
         client.DefaultRequestHeaders.UserAgent.Add(clientInfo);
-    });
+    }); */
+
+    services.AddSingleton<HttpClient>();
 
     /*
     if (result is null) return;

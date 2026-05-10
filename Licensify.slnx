@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/Licensify.CLI/Licensify.CLI.csproj" />
+    <Project Path="src/Licensify.Core/Licensify.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Licensify.Tests.Core/Licensify.Tests.Core.csproj" />
+  </Folder>
+</Solution>

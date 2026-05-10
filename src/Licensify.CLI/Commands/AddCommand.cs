@@ -1,5 +1,6 @@
 using DotMake.CommandLine;
-using Licensify.Services;
+using Licensify.Core.Interfaces;
+using Licensify.Core.Services;
 using Spectre.Console;
 
 namespace Licensify.Commands;

@@ -1,5 +1,7 @@
 using DotMake.CommandLine;
-using Licensify.Services;
+using Licensify.Core;
+using Licensify.Core.Interfaces;
+using Licensify.Core.Services;
 using Spectre.Console;
 
 namespace Licensify.Commands;
@@ -7,13 +9,13 @@ namespace Licensify.Commands;
 [CliCommand(
     Description = "Lists all licenses in a table."
 )]
-public class ListCommand(ICacher database)
+public class ListCommand(ILicenseHttpService httpService)
 {
     public async Task RunAsync()
     {
-        var manifest = await database.GetData<LicenseListManifest>("licenses.json");
+        var lists = await httpService.GetLicenseLists();
 
-        if (manifest is null)
+        if (lists is null)
         {
             AnsiConsole.MarkupLine("[bold red]Couldn't get list of licenses. Check your internet connection.[/]");
             return;
@@ -21,22 +23,29 @@ public class ListCommand(ICacher database)
 
         var table = new Table().RoundedBorder().Title("SPDX Licenses");
         
-        var tableData = manifest.Licenses
+        table.AddColumns(
+            new TableColumn(nameof(LicenseListEntry.LicenseId)).NoWrap(),
+            new TableColumn(nameof(LicenseListEntry.Name)), 
+            new TableColumn(nameof(LicenseListEntry.Reference)).NoWrap()
+        );
+
+        List<LicenseListEntry> mergedList = [];
+
+        foreach (var list in lists) 
+        {
+            mergedList.AddRange(list.Licenses);
+        }
+
+        var tableData = mergedList
             .Where(license => license.IsDeprecatedLicenseId is false)
             .OrderBy(license => license.Name);
-
-        table.AddColumns(
-            new TableColumn(nameof(LicenseListEntry.Name)), 
-            new TableColumn(nameof(LicenseListEntry.LicenseId)).NoWrap(), 
-            new TableColumn(nameof(LicenseListEntry.DetailsUrl)).NoWrap()
-        );
 
         foreach (var entry in tableData)
         {
             table.AddRow(
                 entry.Name,
                 entry.LicenseId,
-                entry.DetailsUrl.Replace(".json", ".html")
+                entry.Reference
             );
         }
 

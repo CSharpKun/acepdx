@@ -3,7 +3,7 @@ using DotMake.CommandLine;
 namespace Licensify.Commands;
 
 [CliCommand(
-    Children = [typeof(ListCommand), typeof(ShowCommand)], 
+    Children = [typeof(ListCommand), typeof(ShowCommand), typeof(AddCommand), typeof(ConfigCommand)], 
     Description = "SPDX Client that can automatically manage LICENSE files for any projects."
 )]
 public class RootCommand

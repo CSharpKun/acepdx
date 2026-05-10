@@ -1,23 +1,30 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using PolyType;
 using YamlDotNet.Serialization;
 
-namespace Licensify;
+namespace Licensify.Core;
 
-public record CliGlobalFlags(
-    bool Verbose,
-    bool ForceNoCache
-);
+public enum DataQueryType 
+{
+    Username,
+    Other
+}
 
+public enum FlagQueryType 
+{
+    OptionalPart
+}
 
-public record LicenseListManifest(
+public class SpdxRemote
+{
+    public string Url { get; set; } = null!;
+}
+
+public record LicenseList(
     [property: JsonPropertyName("licenseListVersion")] string Version,
-    IReadOnlyList<LicenseListEntry> Licenses
+    List<LicenseListEntry> Licenses
 );
 
-[GenerateShape]
-public record LicenseListEntry(
+public partial record LicenseListEntry(
     string Reference,
     bool IsDeprecatedLicenseId,
     string DetailsUrl,
@@ -25,25 +32,26 @@ public record LicenseListEntry(
     string Name,
     string LicenseId,
     IReadOnlyList<string> SeeAlso,
-    bool IsOsiApproved,
-    bool IsFsfLibre
-) {
-    [JsonIgnore] public LicenseEntry? AttachedLicense { get; set; }
+    bool? IsOsiApproved,
+    bool? IsFsfLibre
+) 
+{
+    [JsonIgnore] public string? Remote { get; set; }
 };
 
-public record LicenseEntry(
+public partial record License(
     bool IsDeprecatedLicenseId,
     string LicenseText,
     string StandardLicenseTemplate,
     string Name,
     string LicenseId,
-    IReadOnlyList<CrossRef> CrossRef,
+    IReadOnlyList<CrossReference> CrossRef,
     IReadOnlyList<string> SeeAlso,
-    bool IsOsiApproved,
+    bool? IsOsiApproved,
     string LicenseTextHtml
 );
 
-public record CrossRef(
+public partial record CrossReference(
     string Match,
     string Url,
     bool IsValid,
@@ -54,13 +62,12 @@ public record CrossRef(
 );
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(Dictionary<string, JsonElement>))]
-[JsonSerializable(typeof(LicenseListManifest))]
+[JsonSerializable(typeof(LicenseList))]
 [JsonSerializable(typeof(LicenseListEntry))]
-[JsonSerializable(typeof(LicenseEntry))]
-[JsonSerializable(typeof(CrossRef))]
+[JsonSerializable(typeof(License))]
+[JsonSerializable(typeof(CrossReference))]
 public partial class LicensifyJsonSerializerContext : JsonSerializerContext;
 
 [YamlStaticContext]
-[YamlSerializable(typeof(Dictionary<string, Dictionary<string, string>>))]
-public partial class LicensifyYamlContext : StaticContext;
+[YamlSerializable(typeof(SpdxRemote))]
+public partial class LicensifyYamlContext : StaticContext {}
