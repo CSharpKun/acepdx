@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using YamlDotNet.Serialization;
 
 namespace Licensify.Core;
 
@@ -67,7 +66,3 @@ public partial record CrossReference(
 [JsonSerializable(typeof(License))]
 [JsonSerializable(typeof(CrossReference))]
 public partial class LicensifyJsonSerializerContext : JsonSerializerContext;
-
-[YamlStaticContext]
-[YamlSerializable(typeof(SpdxRemote))]
-public partial class LicensifyYamlContext : StaticContext {}

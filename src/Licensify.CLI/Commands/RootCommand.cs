@@ -1,10 +1,10 @@
 using DotMake.CommandLine;
 
-namespace Licensify.Commands;
+namespace Licensify.CLI.Commands;
 
-[CliCommand(
-    Children = [typeof(ListCommand), typeof(ShowCommand), typeof(AddCommand), typeof(ConfigCommand)], 
-    Description = "SPDX Client that can automatically manage LICENSE files for any projects."
+[CliCommand( 
+    Description = "SPDX Client that can automatically manage licenses for any projects",
+    ShortFormAutoGenerate = CliNameAutoGenerate.Options
 )]
 public class RootCommand
 {
@@ -13,11 +13,4 @@ public class RootCommand
 
     [CliOption(Description = "Force download and update for operation")]
     public bool NoCache { get; set; }
-
-    /*
-    [CliOption(
-        Description = "Custom SPDX repository URL [github, spdx, (your url)]",
-        ValidationPattern = @"^(?:github|spdx|(?:http|https):\/\/[^\s]+)$", ValidationMessage = "You must enter either Url, 'spdx' or 'github'"
-    )] 
-    public string SpdxRepo { get; set; } = "github"; */
 }

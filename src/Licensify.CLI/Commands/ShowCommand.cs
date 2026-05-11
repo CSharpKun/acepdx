@@ -1,19 +1,20 @@
 using DotMake.CommandLine;
 using Licensify.Core;
 using Licensify.Core.Interfaces;
-using Licensify.Core.Services;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
-namespace Licensify.Commands;
+namespace Licensify.CLI.Commands;
 
 [CliCommand(
-    Description = "Shows information about specified license.",
+    Description = "Shows information about specified license",
+    Order = 2,
+    Parent = typeof(RootCommand),
     Alias = "get"
 )]
 public class ShowCommand(ILicenseHttpService httpService)
 {
-    [CliArgument(Description = "License's short id.", Required = true)]
+    [CliArgument(Description = "License Id", Required = true)]
     public string LicenseId { get; set; } = null!;
 
     public async Task RunAsync()

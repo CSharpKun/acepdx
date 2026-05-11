@@ -1,8 +1,9 @@
 namespace Licensify.Core.Interfaces;
 
 public interface IConfigService
-{
-    public Dictionary<string, object> Settings { get; } 
-    public Dictionary<string, SpdxRemote> SpdxRemotes { get; }
-    void UpdateSettings();
+{    
+    public Dictionary<string, SpdxRemote> Remotes { get; set; }
+    public Dictionary<string, string> Settings { get; set; }
+    public void Save();
+    public void Load();
 }

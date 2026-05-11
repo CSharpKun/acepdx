@@ -1,81 +1,74 @@
-﻿using System.Diagnostics;
+﻿using System.IO.Abstractions.TestingHelpers;
 using Licensify.Core.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Licensify.Tests.Core;
 
-public class YamlConfigServiceTest
+public class TomlConfigServiceTest
 {
+    private static string ConfigPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "licensify",
+        "config.toml"
+    );
+
     [Fact]
     public void SerializationTest()
     {
-        var fileService = new MockFileService(null, "");
-        var logger = new NullLogger<YamlConfigService>();
-        var configService = new YamlConfigService(fileService, logger)
-        {
-            SpdxRemotes = new()
-            {
-                ["spdx"] = new()
-                {
-                    Url = new("https://spdx.org/licenses/licenses.json")
-                },
-                ["example"] = new()
-                {
-                    Url = new("https://example.org/licenses")
-                }
-            }
-        };
+        var fileSystem = new MockFileSystem();
+        fileSystem.AddFile(ConfigPath, new MockFileData(""));
 
-        configService.UpdateSettings();
+        var logger = new NullLogger<TomlConfig>();
+        var configService = new TomlConfig(fileSystem, logger);
 
-        Assert.NotNull(fileService.FileString);
-        Assert.Contains("spdx", fileService.FileString);
-        Assert.Contains("https://spdx.org/licenses/licenses.json", fileService.FileString);
-        Assert.Contains("example", fileService.FileString);
-        Assert.Contains("https://example.org/licenses", fileService.FileString);
+        configService.Settings["user.name"] = "John";
+        configService.Remotes["spdx"] = new() { Url = "https://spdx.org/licenses/licenses.json" };
+        configService.Remotes["example"] = new() { Url = "https://example.org/licenses" };
+
+        configService.Save();
+
+        var content = fileSystem.File.ReadAllText(ConfigPath);
+        
+        Assert.Contains("spdx", content);
+        Assert.Contains("https://spdx.org/licenses/licenses.json", content);
+        Assert.Contains("example", content);
+        Assert.Contains("https://example.org/licenses", content);
+        Assert.Contains("user", content);
+        Assert.Contains("name", content);
+        Assert.Contains("John", content);
     }
 
     [Fact]
     public void SerializationAndDeserializationTest()
     {
-        var fileService = new MockFileService(null, "");
-        var logger = new NullLogger<YamlConfigService>();
-        var configService = new YamlConfigService(fileService, logger)
+        var fileSystem = new MockFileSystem();
+        fileSystem.AddFile(ConfigPath, new MockFileData(""));
+        
+        var logger = new NullLogger<TomlConfig>();
+        var configService = new TomlConfig(fileSystem, logger);
+
+        configService.Settings["user.name"] = "John";
+        configService.Settings["remote.spdx.url"] = "https://spdx.org/licenses/licenses.json";
+        configService.Settings["remote.example.url"] = "https://example.org/licenses";
+        configService.Remotes["spdx"] = new() { Url = "https://spdx.org/licenses/licenses.json" };
+        configService.Remotes["example"] = new() { Url = "https://example.org/licenses" };
+
+        configService.Save();
+
+        var otherConfigService = new TomlConfig(fileSystem, logger);
+        otherConfigService.Load();
+
+        Assert.NotEmpty(configService.Settings);
+        Assert.NotEmpty(otherConfigService.Settings);
+        Assert.NotEmpty(configService.Remotes);
+        Assert.NotEmpty(otherConfigService.Remotes);
+
+        Assert.Equal(configService.Settings, otherConfigService.Settings);
+        Assert.Equal(configService.Remotes.Keys.OrderBy(k => k), otherConfigService.Remotes.Keys.OrderBy(k => k));
+        
+        foreach (var key in configService.Remotes.Keys)
         {
-            SpdxRemotes = new()
-            {
-                ["spdx"] = new()
-                {
-                    Url = new("https://spdx.org/licenses/licenses.json")
-                },
-                ["example"] = new()
-                {
-                    Url = new("https://example.org/licenses")
-                }
-            },
-            Settings = new()
-            {
-                ["user"] = new Dictionary<string, string>()
-                {
-                    ["name"] = "John",
-                    ["surname"] = "Doe"
-                }
-            }
-        };
-
-        configService.UpdateSettings();
-        var otherConfigService = new YamlConfigService(fileService, logger);
-
-        Assert.Equal(
-            configService.Settings.Keys.OrderBy(k => k),
-            otherConfigService.Settings.Keys.OrderBy(k => k)
-        );
-
-        Assert.Equal(otherConfigService.SpdxRemotes, configService.SpdxRemotes);
-
-        foreach (var key in configService.Settings.Keys)
-        {
-            Assert.Equal(configService.Settings[key], otherConfigService.Settings[key]);
+            Assert.Equal(configService.Remotes[key].Url, otherConfigService.Remotes[key].Url);
         }
     }
 }

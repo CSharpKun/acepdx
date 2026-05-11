@@ -1,92 +1,117 @@
+using System.IO.Abstractions;
 using Licensify.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
+using Tommy;
 
 namespace Licensify.Core.Services;
 
-public class YamlConfigService : IConfigService
+public class TomlConfig : IConfigService
 {
-    public Dictionary<string, object> Settings { get; set; } = [];
+    public Dictionary<string, SpdxRemote> Remotes { get; set; } = [];
+    public Dictionary<string, string> Settings { get; set; } = [];
 
-    public Dictionary<string, SpdxRemote> SpdxRemotes
-    {
-        get
-        {
-            if (!Settings.TryGetValue("remote", out var value) || value is not Dictionary<string, SpdxRemote>)
-            {
-                Settings["remote"] = new Dictionary<string, SpdxRemote>();
-            }
+    private readonly IFileSystem _fileSystem;
+    private readonly ILogger<TomlConfig> _logger;
 
-            return Settings["remote"] as Dictionary<string, SpdxRemote> ?? [];
-        }
-        set
-        {
-            Settings["remote"] = value;
-        }
-    }
-
-    private static string ConfigFile { get; } =
-    Path.Combine(
+    private static readonly string _configPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "licensify",
-        "config.yml"
+        "config.toml"
     );
 
-    private readonly IFileService _fileService;
-    private readonly IDeserializer _deserializer;
-    private readonly ISerializer _serializer;
-    private readonly ILogger<YamlConfigService> _logger;
-
-    private const int DotSymbol = 1;
-    private const int ColonSymbol = 1;
-
-    public YamlConfigService(IFileService? fileService = null, ILogger<YamlConfigService>? logger = null)
+    public TomlConfig(IFileSystem fileSystem, ILogger<TomlConfig>? logger = null) 
     {
-        _fileService = fileService ?? new FileService(new(ConfigFile));
-        _deserializer = new StaticDeserializerBuilder(new LicensifyYamlContext()).Build();
-        _serializer = new StaticSerializerBuilder(new LicensifyYamlContext()).Build();
-        _logger = logger ?? NullLogger<YamlConfigService>.Instance;
-        LoadFromDisk();
+        _fileSystem = fileSystem;
+        _logger = logger ?? NullLogger<TomlConfig>.Instance;
+        Load();
     }
 
-    public void LoadFromDisk()
+    public void Load()
     {
-        if (!_fileService.FileExists)
+        using var stream = _fileSystem.File.OpenText(_configPath);
+
+        var root = TOML.Parse(stream);
+
+        Settings = FlattenToml(root);
+
+        if (root.TryGetNode("remote", out var remoteNode) || remoteNode is not TomlTable remoteTable) return;
+
+        foreach (var kwp in remoteTable.RawTable) 
         {
-            Settings = [];
-            return;
+            var valueTable = kwp.Value.AsTable;
+            if (!valueTable.TryGetNode("url", out var url)) continue;
+
+            Remotes.Add(kwp.Key, new() {
+                Url = url
+            });
+        }
+    }
+
+    public static Dictionary<string, string> FlattenToml(TomlTable table, string prefix = "")
+    {
+        var result = new Dictionary<string, string>();
+
+        foreach (var (key, child) in table.RawTable)
+        {
+            var newKey = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
+
+            if (child is TomlTable childTable)
+            {
+                foreach (var kv in FlattenToml(childTable, newKey))
+                    result[kv.Key] = kv.Value;
+            }
+            else if (child is not TomlArray)
+            {
+                result[newKey] = child;
+            }
         }
 
-        var yaml = new YamlStream();
-        yaml.Load(new StringReader(_fileService.ReadStringFromFile()));
-        var root = yaml.Documents.FirstOrDefault()?.RootNode;
+        return result;
+    }
 
-        if (root is null) 
+    public void Save()
+    {
+        var table = new TomlTable();
+
+        foreach (var kwp in Settings)
         {
-            Settings = [];
-            return;
+            var keys = kwp.Key.Split('.');
+            TomlTable currentTable = table;
+
+            if (keys.Length < 2)
+            {
+                continue;
+            }
+
+            foreach (var key in keys[..^1])
+            {
+                if (currentTable.TryGetNode(key, out var node) && node is TomlTable tomlTable)
+                {
+                    currentTable = tomlTable;
+                    continue;
+                }
+                currentTable[key] = currentTable = [];
+            }
+
+            currentTable[keys[^1]] = kwp.Value;
         }
 
-        Settings = ConvertYamlNode(root) as Dictionary<string, object> ?? [];
-    }
-
-    private object? ConvertYamlNode(YamlNode node)
-    {
-        return node switch
+        if (!table.TryGetNode("remote", out var remotesTable))
         {
-            YamlScalarNode scalar => scalar.Value,
-            YamlMappingNode mapping => mapping.Children
-                .ToDictionary(
-                    kvp => ((YamlScalarNode)kvp.Key).Value!,
-                    kvp => ConvertYamlNode(kvp.Value)
-                ),
-            YamlSequenceNode sequence => sequence.Children.Select(ConvertYamlNode).ToList(),
-            _ => null
-        };
+            remotesTable = table["remote"] = new TomlTable();
+        }
+
+        foreach (var remote in Remotes)
+        {
+            remotesTable[remote.Key] = new TomlTable()
+            {
+                [nameof(SpdxRemote.Url)] = remote.Value.Url
+            };
+        }
+
+        using var stream = _fileSystem.File.CreateText(_configPath);
+        table.WriteTo(stream);
+        stream.Flush();
     }
-
-    public void UpdateSettings() => _fileService.WriteToFile(_serializer.Serialize(Settings));
-
 }

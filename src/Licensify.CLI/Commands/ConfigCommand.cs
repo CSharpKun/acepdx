@@ -2,10 +2,12 @@ using DotMake.CommandLine;
 using Licensify.Core.Interfaces;
 using Spectre.Console;
 
-namespace Licensify.Commands;
+namespace Licensify.CLI.Commands;
 
 [CliCommand(
-    Description = "Manages Config."
+    Description = "Manages config",
+    Order = 4,
+    Parent = typeof(RootCommand)
 )]
 public class ConfigCommand(IConfigService configService) : ConfigKeyArgument
 {
@@ -23,8 +25,9 @@ public class ConfigCommand(IConfigService configService) : ConfigKeyArgument
 
         public async Task RunAsync() 
         {
+            
             configService.Settings[Key] = Value;
-            configService.UpdateSettings();
+            configService.Save();
         }
     }
 
@@ -33,7 +36,13 @@ public class ConfigCommand(IConfigService configService) : ConfigKeyArgument
     {
         public async Task RunAsync() 
         { 
-            if (!configService.Settings.Remove(Key)) AnsiConsole.MarkupLine("[red]Key does not exist.[/]"); 
+            if (configService.Settings.Remove(Key)) 
+            {
+                configService.Save();
+                return;
+            }  
+            AnsiConsole.MarkupLine("[red]Key does not exist.[/]"); 
+
         }
     }
 
@@ -44,7 +53,7 @@ public class ConfigCommand(IConfigService configService) : ConfigKeyArgument
         {
             if (!configService.Settings.TryGetValue(Key, out var value)) AnsiConsole.MarkupLine("[red]Key does not exist.[/]");
             else if (value is null) value = string.Empty;
-            else AnsiConsole.WriteLine((string)value);
+            else AnsiConsole.WriteLine(value);
         }
     }
 }

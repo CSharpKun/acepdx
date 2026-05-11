@@ -1,17 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Text.Json.Serialization;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Text.Json;
 using DotMake.CommandLine;
-using Licensify.Commands;
-using Licensify;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 using Licensify.Core.Services;
-using Licensify.Core;
 using Licensify.Core.Interfaces;
+using Licensify.CLI.Commands;
 
 var rootCommand = Cli.Parse<RootCommand>().Bind<RootCommand>();
 
@@ -20,7 +14,7 @@ Cli.Ext.ConfigureServices(services =>
     services
     //.AddSingleton<ICacher, MessagePackCacher>()
     .AddSingleton<ILicenseHttpService, SpdxHttpService>()
-    .AddSingleton<IConfigService, YamlConfigService>()
+    .AddSingleton<IConfigService, TomlConfig>()
     .AddSingleton<ILicenseParser, LicenseParser>();
 
     var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);

@@ -22,10 +22,13 @@ public class SpdxHttpService(HttpClient client, IConfigService config, ILogger<S
     public async Task<List<LicenseList>> GetLicenseLists(CancellationToken token = default)
     {
         List<LicenseList> licenses = [];
-        foreach (var remote in config.SpdxRemotes)
+        foreach (var remote in config.Remotes)
         {
-            if (!Uri.TryCreate(remote.Value.Url, UriKind.Absolute, out var uri))
+            var url = remote.Value.Url;
+            
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
             {
+                _logger.LogError("List URL of remote {Remote} is incorrectly formatted - skipping", remote.Key);
                 continue;
             }
             var list = await GetJsonRequest<LicenseList>(uri, token);
@@ -40,6 +43,8 @@ public class SpdxHttpService(HttpClient client, IConfigService config, ILogger<S
     {
         if (!Uri.TryCreate(licenseEntry.DetailsUrl, UriKind.Absolute, out var result))
         {
+            _logger.LogCritical("Details URL of license {LicenseId} from {LicenseRemote} is incorrectly formatted - skipping", 
+                licenseEntry.LicenseId, licenseEntry.Remote);
             return null;
         }
         return await GetJsonRequest<License>(result, token);

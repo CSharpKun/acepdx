@@ -1,13 +1,14 @@
 using DotMake.CommandLine;
 using Licensify.Core;
 using Licensify.Core.Interfaces;
-using Licensify.Core.Services;
 using Spectre.Console;
 
-namespace Licensify.Commands;
+namespace Licensify.CLI.Commands;
 
 [CliCommand(
-    Description = "Lists all licenses in a table."
+    Description = "Lists all licenses in a table",
+    Order = 1,
+    Parent = typeof(RootCommand)
 )]
 public class ListCommand(ILicenseHttpService httpService)
 {
@@ -26,6 +27,7 @@ public class ListCommand(ILicenseHttpService httpService)
         table.AddColumns(
             new TableColumn(nameof(LicenseListEntry.LicenseId)).NoWrap(),
             new TableColumn(nameof(LicenseListEntry.Name)), 
+            new TableColumn(nameof(LicenseListEntry.Remote)).NoWrap(),
             new TableColumn(nameof(LicenseListEntry.Reference)).NoWrap()
         );
 
@@ -43,8 +45,9 @@ public class ListCommand(ILicenseHttpService httpService)
         foreach (var entry in tableData)
         {
             table.AddRow(
-                entry.Name,
                 entry.LicenseId,
+                entry.Name,
+                entry.Remote ?? "Unknown",
                 entry.Reference
             );
         }
