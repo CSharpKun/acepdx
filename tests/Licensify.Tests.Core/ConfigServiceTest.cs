@@ -16,8 +16,6 @@ public class TomlConfigServiceTest
     public void SerializationTest()
     {
         var fileSystem = new MockFileSystem();
-        fileSystem.AddFile(ConfigPath, new MockFileData(""));
-
         var logger = new NullLogger<TomlConfig>();
         var configService = new TomlConfig(fileSystem, logger);
 
@@ -42,8 +40,6 @@ public class TomlConfigServiceTest
     public void SerializationAndDeserializationTest()
     {
         var fileSystem = new MockFileSystem();
-        fileSystem.AddFile(ConfigPath, new MockFileData(""));
-        
         var logger = new NullLogger<TomlConfig>();
         var configService = new TomlConfig(fileSystem, logger);
 
@@ -56,7 +52,6 @@ public class TomlConfigServiceTest
         configService.Save();
 
         var otherConfigService = new TomlConfig(fileSystem, logger);
-        otherConfigService.Load();
 
         Assert.NotEmpty(configService.Settings);
         Assert.NotEmpty(otherConfigService.Settings);

@@ -14,16 +14,32 @@ public class TomlConfig : IConfigService
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<TomlConfig> _logger;
 
-    private static readonly string _configPath = Path.Combine(
+    private static readonly string _folderPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "licensify",
+        "licensify"
+    );
+
+    private static readonly string _configPath = Path.Combine(
+        _folderPath,
         "config.toml"
     );
 
-    public TomlConfig(IFileSystem fileSystem, ILogger<TomlConfig>? logger = null) 
+    public TomlConfig(IFileSystem fileSystem, ILogger<TomlConfig>? logger = null)
     {
         _fileSystem = fileSystem;
         _logger = logger ?? NullLogger<TomlConfig>.Instance;
+
+        if (!_fileSystem.Directory.Exists(_folderPath))
+            _fileSystem.Directory.CreateDirectory(_folderPath);
+
+        if (!_fileSystem.File.Exists(_configPath))
+        {
+            Settings = [];
+            Remotes = [];
+            Save();
+            return;
+        }
+
         Load();
     }
 
@@ -35,16 +51,16 @@ public class TomlConfig : IConfigService
 
         Settings = FlattenToml(root);
 
-        if (root.TryGetNode("remote", out var remoteNode) || remoteNode is not TomlTable remoteTable) return;
+        if (!root.TryGetNode("remote", out var remoteNode) || remoteNode is not TomlTable remoteTable) return;
 
-        foreach (var kwp in remoteTable.RawTable) 
+        foreach (var kwp in remoteTable.RawTable)
         {
-            var valueTable = kwp.Value.AsTable;
-            if (!valueTable.TryGetNode("url", out var url)) continue;
+            if (kwp.Value is not TomlTable valueTable || !valueTable.TryGetNode(nameof(SpdxRemote.Url).ToLower(), out var url)) continue;
 
-            Remotes.Add(kwp.Key, new() {
+            Remotes[kwp.Key] = new()
+            {
                 Url = url
-            });
+            };
         }
     }
 
@@ -106,7 +122,7 @@ public class TomlConfig : IConfigService
         {
             remotesTable[remote.Key] = new TomlTable()
             {
-                [nameof(SpdxRemote.Url)] = remote.Value.Url
+                [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url
             };
         }
 
