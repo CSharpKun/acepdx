@@ -2,5 +2,5 @@ namespace Licensify.Core.Interfaces;
 
 public interface ILicenseParser
 {
-    public string Parse(IDataProvider dataProvider, License license);
+    public string Parse(ISpdxTemplateProvider dataProvider, License license);
 }

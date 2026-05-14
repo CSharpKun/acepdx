@@ -3,12 +3,15 @@ using Licensify.Core.Interfaces;
 
 namespace Licensify.Core.Services;
 
-public class LicenseParser(IConfigService configService) : ILicenseParser
+public class SpdxLicenseParser(IConfigService configService) : ILicenseParser
 {
-    private StringBuilder Builder { get; } = new();
+    private ISpdxTemplateProvider Provider { get; set; } = null!;
+    private StringBuilder Builder { get; set; } = new();
 
-    public string Parse(IDataProvider dataProvider, License license)
+    public string Parse(ISpdxTemplateProvider dataProvider, License license)
     {
+        Builder = new();
+        Provider = dataProvider;
         var licenseSpan = license.StandardLicenseTemplate.AsSpan();
         
         while (true) 
@@ -29,32 +32,30 @@ public class LicenseParser(IConfigService configService) : ILicenseParser
             switch (licenseSpan[2..endPos]) 
             {
                 case "beginOptional":
-                    ParseOptional(dataProvider, ref licenseSpan, endPos + 2);
+                    ParseOptional(ref licenseSpan, endPos + 2);
                     break;
 
                 case var n when n.StartsWith("var"):
-                    ParseVariable(dataProvider, ref licenseSpan, endPos + 2);
+                    ParseVariable(ref licenseSpan, endPos + 2);
                     break;
             }
         }
 
-        
-
-        return licenseSpan.ToString();
+        return Builder.ToString();
     }
 
-    private void ParseOptional(IDataProvider dataProvider, ref ReadOnlySpan<char> licenseSpan, int tagEndPos) 
+    private void ParseOptional(ref ReadOnlySpan<char> licenseSpan, int tagEndPos) 
     {
         var closingTagString = "<<endOptional>>";
         licenseSpan = licenseSpan[tagEndPos..];
         var closingTag = licenseSpan.IndexOf(closingTagString);
-        var result = dataProvider.GetFlag(FlagQueryType.OptionalPart, licenseSpan[..closingTag].ToString());
+        var result = Provider.GetOptional(licenseSpan[..closingTag]);
         if (result) Builder.Append(licenseSpan[..closingTag]);
         licenseSpan = licenseSpan[(closingTag + closingTagString.Length)..];
     }
 
-    private void ParseVariable(IDataProvider dataProvider, ref ReadOnlySpan<char> licenseSpan, int tagEndPos) 
+    private void ParseVariable(ref ReadOnlySpan<char> licenseSpan, int tagEndPos) 
     {
-
+        licenseSpan = licenseSpan[tagEndPos..];
     }
 }

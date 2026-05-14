@@ -2,63 +2,73 @@ using System.Text.Json.Serialization;
 
 namespace Licensify.Core;
 
-public enum DataQueryType 
+public enum VariableType 
 {
-    Username,
+    Copyright,
     Other
-}
-
-public enum FlagQueryType 
-{
-    OptionalPart
 }
 
 public class SpdxRemote
 {
-    public string Url { get; set; } = null!;
+    public required string Url { get; set; }
 }
 
 public record LicenseList(
-    [property: JsonPropertyName("licenseListVersion")] string Version,
-    List<LicenseListEntry> Licenses
+    List<LicenseListEntry> Licenses,
+    [property: JsonPropertyName("licenseListVersion")] string? Version,
+    DateTime? ReleaseDate
 );
 
-public partial record LicenseListEntry(
-    string Reference,
-    bool IsDeprecatedLicenseId,
-    string DetailsUrl,
-    int ReferenceNumber,
-    string Name,
-    string LicenseId,
-    IReadOnlyList<string> SeeAlso,
-    bool? IsOsiApproved,
-    bool? IsFsfLibre
-) 
+public partial class LicenseListEntry
 {
+    public required string Name { get; init; }
+    public required string LicenseId { get; init; }
+    public required Uri DetailsUrl { get; init; }
+
+    public string? Comments { get; init; }
+    public string? DeprecatedVersion { get; init; }
+    
+    public Uri? Reference { get; init; }
+    public int? ReferenceNumber { get; init; }
+
+    public bool? IsDeprecatedLicenseId { get; init; }
+    public bool? IsOsiApproved { get; init; }
+    public bool? IsFsfLibre { get; init; }
+
+    public IReadOnlyList<string>? SeeAlso { get; init; }
+
     [JsonIgnore] public string? Remote { get; set; }
 };
 
-public partial record License(
-    bool IsDeprecatedLicenseId,
-    string LicenseText,
-    string StandardLicenseTemplate,
-    string Name,
-    string LicenseId,
-    IReadOnlyList<CrossReference> CrossRef,
-    IReadOnlyList<string> SeeAlso,
-    bool? IsOsiApproved,
-    string LicenseTextHtml
-);
+public partial class License {
+    public required string Name { get; init; }
+    public required string LicenseId { get; init; }
+    public required string LicenseText { get; init; }
+    public required string StandardLicenseTemplate { get; init; }
 
-public partial record CrossReference(
-    string Match,
-    string Url,
-    bool IsValid,
-    bool IsLive,
-    DateTime Timestamp,
-    bool IsWayBackLink,
-    int Order
-);
+    public string? StandardLicenseHeaderTemplate { get; init; }
+    public string? LicenseTextHtml { get; init; } 
+    
+    public bool? IsDeprecatedLicenseId { get; init; } 
+    public bool? IsOsiApproved { get; init; } 
+    
+    public IReadOnlyList<CrossReference>? CrossRef { get; init; } 
+    public IReadOnlyList<string>? SeeAlso { get; init; } 
+};
+
+public partial class CrossReference 
+{
+    public required Uri Url { get; init; }
+    
+    public DateTime? Timestamp { get; init; }
+    public string? Match { get; init; }
+    public int? Order { get; init; }
+
+    public bool? IsValid { get; init; }
+    public bool? IsLive { get; init; }
+    public bool? IsWayBackLink { get; init; } 
+}
+    
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(LicenseList))]

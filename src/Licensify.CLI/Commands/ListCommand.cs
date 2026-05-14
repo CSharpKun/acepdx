@@ -23,13 +23,6 @@ public class ListCommand(ILicenseHttpService httpService)
         }
 
         var table = new Table().RoundedBorder().Title("SPDX Licenses");
-        
-        table.AddColumns(
-            new TableColumn(nameof(LicenseListEntry.LicenseId)).NoWrap(),
-            new TableColumn(nameof(LicenseListEntry.Name)), 
-            new TableColumn(nameof(LicenseListEntry.Remote)).NoWrap(),
-            new TableColumn(nameof(LicenseListEntry.Reference)).NoWrap()
-        );
 
         List<LicenseListEntry> mergedList = [];
 
@@ -42,13 +35,20 @@ public class ListCommand(ILicenseHttpService httpService)
             .Where(license => license.IsDeprecatedLicenseId is false)
             .OrderBy(license => license.Name);
 
+        table.AddColumns(
+            new TableColumn(nameof(LicenseListEntry.LicenseId)).NoWrap(),
+            new TableColumn(nameof(LicenseListEntry.Name)), 
+            new TableColumn(nameof(LicenseListEntry.Remote)).NoWrap(),
+            new TableColumn(nameof(LicenseListEntry.Reference)).NoWrap()
+        );
+
         foreach (var entry in tableData)
         {
             table.AddRow(
                 entry.LicenseId,
                 entry.Name,
                 entry.Remote ?? "Unknown",
-                entry.Reference
+                entry?.Reference?.ToString() ?? "Unknown"
             );
         }
 

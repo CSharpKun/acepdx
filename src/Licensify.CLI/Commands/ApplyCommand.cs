@@ -7,17 +7,31 @@ using Spectre.Console;
 namespace Licensify.CLI.Commands;
 
 [CliCommand(
-    Description = "Adds specified license to the specified project",
+    Description = "Applies specified license to the specified project",
     Order = 3,
     Parent = typeof(RootCommand)
 )]
-public class AddCommand(ILicenseParser parser, ILicenseHttpService httpService) : IDataProvider
+public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService) : ISpdxTemplateProvider
 {
+    [CliOption(
+        Description = "Assume yes",
+        Group = "assume",
+        Alias = "-y"
+    )]
+    public bool AssumeYes { get; set; }
+
+    [CliOption(
+        Description = "Assume no",
+        Group = "assume",
+        Alias = "-n"
+    )]
+    public bool AssumeNo { get; set; }
+
     [CliArgument(Description = "License Id", Required = true)]
-    public string LicenseId { get; set; } = null!;
+    public required string LicenseId { get; set; } 
 
     [CliArgument(Description = "Path to the repository", Name = "repo")]
-    public string RepositoryPath { get; set; } = "."; 
+    public DirectoryInfo RepositoryPath { get; set; } = new(Environment.CurrentDirectory); 
 
     public async Task RunAsync()
     {
@@ -59,29 +73,26 @@ public class AddCommand(ILicenseParser parser, ILicenseHttpService httpService) 
         );
     }
 
-    private bool GetOptionalParts(string optionalText)
-    {
-        return AnsiConsole.Ask("Would you like to add this optional part in your license: \"" + optionalText + "\"?", true);
-    }
-
-    public string GetData(DataQueryType type, string? defaultValue = null, Regex? validation = null)
-    {
+    public string GetVariable(VariableType type, string? defaultValue, Regex? validation)
+    { 
         string message = type switch 
         {
-            DataQueryType.Username => "Enter your name:",
-            _ => "default"
+            VariableType.Copyright => "Enter your name:",
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
         };
         var result = AnsiConsole.Ask<string>(message);
         while (!validation?.IsMatch(result) ?? false) 
         {
-            AnsiConsole.Markup("[red]Incorrect data format. Please try again.");
+            AnsiConsole.Markup("[red]Incorrect data format. Please try again.[/]");
             result = AnsiConsole.Ask<string>(message, defaultValue ?? "");
         }
         return result;
     }
 
-    public bool GetFlag(FlagQueryType type, string? textToChange = null)
+    public bool GetOptional(ReadOnlySpan<char> optionalText)
     {
-        throw new NotImplementedException();
+        if (AssumeYes) return true;
+        if (AssumeNo) return false;
+        return AnsiConsole.Ask("Would you like to add this optional part in your license: \"" + optionalText.ToString() + "\"?", true);
     }
 }

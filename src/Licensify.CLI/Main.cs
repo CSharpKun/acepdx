@@ -7,6 +7,7 @@ using Licensify.Core.Services;
 using Licensify.Core.Interfaces;
 using Licensify.CLI.Commands;
 using System.IO.Abstractions;
+using Microsoft.Extensions.Logging;
 
 var rootCommand = Cli.Parse<RootCommand>().Bind<RootCommand>();
 
@@ -16,8 +17,11 @@ Cli.Ext.ConfigureServices(services =>
     //.AddSingleton<ICacher, MessagePackCacher>()
     .AddSingleton<ILicenseHttpService, SpdxHttpService>()
     .AddSingleton<IConfigService, TomlConfig>()
-    .AddSingleton<ILicenseParser, LicenseParser>()
-    .AddSingleton<IFileSystem, FileSystem>();
+    .AddSingleton<ILicenseParser, SpdxLicenseParser>()
+    .AddSingleton<IFileSystem, FileSystem>()
+    .AddLogging(builder => 
+        builder.ClearProviders() 
+    );
 
     var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
     var clientInfo = new ProductInfoHeaderValue("Licensify", version);

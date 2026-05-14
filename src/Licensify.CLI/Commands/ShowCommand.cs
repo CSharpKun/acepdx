@@ -50,25 +50,35 @@ public class ShowCommand(ILicenseHttpService httpService)
             new Panel(license.LicenseText)
             {
                 Border = BoxBorder.Double
-            },
-            new Markup($"Deprecated License Id: {GetStatusColorTag(entry.IsDeprecatedLicenseId, reverse: true) + entry.IsDeprecatedLicenseId}[/]"),
+            }
         };
+
+        if (license.IsDeprecatedLicenseId is not null)
+            renderList.Add(new Markup($"Deprecated License Id: {GetStatusColorTag(entry.IsDeprecatedLicenseId ?? false, reverse: true) + entry.IsDeprecatedLicenseId}[/]"));
 
         if (license.IsOsiApproved is not null) 
             renderList.Add(new Markup($"Osi Approved: {GetStatusColorTag(license.IsOsiApproved ?? false) + license.IsOsiApproved}[/]"));
 
-        foreach (var reference in license.CrossRef)
-        {
-            renderList.Add(new Panel(
-                new Rows(
-                    new Markup($"[bold]Reference URL:[/] [link]{reference.Url}[/]"),
-                    new Markup($"[bold]Live:[/] {GetStatusColorTag(reference.IsLive) + reference.IsLive}[/]"),
-                    new Markup($"[bold]Valid:[/] {GetStatusColorTag(reference.IsValid) + reference.IsValid}[/]"),
+        if (license.CrossRef is not null) 
+            foreach (var reference in license.CrossRef)
+            {
+                var rows = new List<Markup>() {
+                    new($"[bold]Reference URL:[/] [link]{reference.Url}[/]")
+                };
+
+                if (reference.IsLive is not null)
+                    rows.Add(new($"[bold]Live:[/] {GetStatusColorTag(reference.IsLive ?? false) + reference.IsLive}[/]"));
+
+                if (reference.IsValid is not null)
+                    rows.Add(new($"[bold]Valid:[/] {GetStatusColorTag(reference.IsValid ?? false) + reference.IsValid}[/]"));
+
+                rows.AddRange([
                     new Markup($"[bold]Match:[/] \"{reference.Match}\""),
                     new Markup($"[bold]Timestamp:[/] {reference.Timestamp}")
-                )
-            ));
-        }
+                ]);
+
+                renderList.Add(new Panel(new Rows(rows)));
+            }
 
         var panel = new Panel(new Rows(renderList))
         {

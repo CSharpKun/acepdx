@@ -107,7 +107,8 @@ public class TomlConfig : IConfigService
                     currentTable = tomlTable;
                     continue;
                 }
-                currentTable[key] = currentTable = [];
+                currentTable[key] = new TomlTable(); 
+                currentTable = (TomlTable)currentTable[key];
             }
 
             currentTable[keys[^1]] = kwp.Value;
