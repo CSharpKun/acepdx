@@ -7,7 +7,7 @@ namespace Licensify.CLI.Commands;
 [CliCommand(
     Description = "Manages remote vaults",
     Order = 5,
-    Parent = typeof(RootCommand)
+    Parent = typeof(MainCommand)
 )]
 public class RemoteCommand(IConfigService config)
 {

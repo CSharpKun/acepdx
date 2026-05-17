@@ -1,3 +1,5 @@
+using Licensify.Core.Models;
+
 namespace Licensify.Core.Interfaces;
 
 public interface ILicenseHttpService 

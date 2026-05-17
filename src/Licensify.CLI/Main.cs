@@ -1,57 +1,63 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Net.Http.Headers;
-using System.Reflection;
-using DotMake.CommandLine;
-using Licensify.Core.Services;
-using Licensify.Core.Interfaces;
-using Licensify.CLI.Commands;
+﻿using System.Net.Http.Headers;
 using System.IO.Abstractions;
-using Microsoft.Extensions.Logging;
+using System.Reflection;
 
-var rootCommand = Cli.Parse<RootCommand>().Bind<RootCommand>();
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using DotMake.CommandLine;
+using Serilog.Sinks.Spectre;
+using Serilog.Events;
+using Serilog;
+
+using Licensify.Core.Interfaces;
+using Licensify.Core.Services;
+using Licensify.CLI.Commands;
+
+var mainCommand = Cli.Parse<MainCommand>().Bind<MainCommand>();
+
+var logFile = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    "licensify",
+    "licensify.log"
+);
+
+#pragma warning disable CS8604
+
+var logDirectory = Path.GetDirectoryName(logFile);
+if (!Directory.Exists(logDirectory))
+    Directory.CreateDirectory(logDirectory);
+
+#pragma warning restore CS8604
+
+var loggerConfig = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File(logFile,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                restrictedToMinimumLevel: LogEventLevel.Information
+            );
+
+if (mainCommand.Verbose) loggerConfig.WriteTo.Spectre();
+Log.Logger = loggerConfig.CreateLogger();
+
+var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
+var clientInfo = new ProductInfoHeaderValue("Licensify", version);
 
 Cli.Ext.ConfigureServices(services =>
 {
     services
     //.AddSingleton<ICacher, MessagePackCacher>()
-    .AddSingleton<ILicenseHttpService, SpdxHttpService>()
     .AddSingleton<IConfigService, TomlConfig>()
     .AddSingleton<ILicenseParser, SpdxLicenseParser>()
     .AddSingleton<IFileSystem, FileSystem>()
-    .AddLogging(builder => 
-        builder.ClearProviders() 
-    );
-
-    var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
-    var clientInfo = new ProductInfoHeaderValue("Licensify", version);
-
-    /*services.AddHttpClient("spdx", client =>
+    .AddLogging(builder =>
+        builder.ClearProviders().AddSerilog()
+    )
+    .AddHttpClient<ILicenseHttpService, SpdxHttpService>(client =>
     {
         client.Timeout = TimeSpan.FromSeconds(30);
-        client.BaseAddress = new("https://spdx.org/licenses/");
         client.DefaultRequestHeaders.UserAgent.Add(clientInfo);
     });
-
-    services.AddHttpClient("github", client =>
-    {
-        client.Timeout = TimeSpan.FromSeconds(30);
-        client.BaseAddress = new("https://raw.githubusercontent.com/spdx/license-list-data/main/json/");
-        client.DefaultRequestHeaders.UserAgent.Add(clientInfo);
-    }); */
-
-    services.AddSingleton<HttpClient>();
-
-    /*
-    if (result is null) return;
-
-    services.AddHttpClient(result.Host, client =>
-    {
-        client.Timeout = TimeSpan.FromSeconds(30);
-        client.BaseAddress = result;
-        client.DefaultRequestHeaders.UserAgent.Add(clientInfo);
-    });
-    */
 });
 
-await Cli.RunAsync<RootCommand>();
+await Cli.RunAsync<MainCommand>();

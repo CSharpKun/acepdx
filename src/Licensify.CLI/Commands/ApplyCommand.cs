@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using DotMake.CommandLine;
 using Licensify.Core;
 using Licensify.Core.Interfaces;
+using Licensify.Core.Models;
 using Spectre.Console;
 
 namespace Licensify.CLI.Commands;
@@ -9,7 +10,7 @@ namespace Licensify.CLI.Commands;
 [CliCommand(
     Description = "Applies specified license to the specified project",
     Order = 3,
-    Parent = typeof(RootCommand)
+    Parent = typeof(MainCommand)
 )]
 public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService) : ISpdxTemplateProvider
 {

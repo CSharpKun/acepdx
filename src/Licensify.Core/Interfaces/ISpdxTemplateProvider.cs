@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Licensify.Core.Models;
 
 namespace Licensify.Core.Interfaces;
 

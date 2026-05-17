@@ -1,6 +1,7 @@
 using DotMake.CommandLine;
 using Licensify.Core;
 using Licensify.Core.Interfaces;
+using Licensify.Core.Models;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -9,7 +10,7 @@ namespace Licensify.CLI.Commands;
 [CliCommand(
     Description = "Shows information about specified license",
     Order = 2,
-    Parent = typeof(RootCommand),
+    Parent = typeof(MainCommand),
     Alias = "get"
 )]
 public class ShowCommand(ILicenseHttpService httpService)

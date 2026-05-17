@@ -1,23 +1,14 @@
 using System.Text.Json.Serialization;
 
-namespace Licensify.Core;
+namespace Licensify.Core.Models;
 
-public enum VariableType 
+public partial class LicenseList
 {
-    Copyright,
-    Other
+    public required List<LicenseListEntry> Licenses { get; init; }
+    [JsonPropertyName("licenseListVersion")] public string? Version { get; init; }
+    public DateTime? ReleaseDate { get; init; }    
+    public string? Remote { get; set; }
 }
-
-public class SpdxRemote
-{
-    public required string Url { get; set; }
-}
-
-public record LicenseList(
-    List<LicenseListEntry> Licenses,
-    [property: JsonPropertyName("licenseListVersion")] string? Version,
-    DateTime? ReleaseDate
-);
 
 public partial class LicenseListEntry
 {
@@ -68,7 +59,6 @@ public partial class CrossReference
     public bool? IsLive { get; init; }
     public bool? IsWayBackLink { get; init; } 
 }
-    
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(LicenseList))]

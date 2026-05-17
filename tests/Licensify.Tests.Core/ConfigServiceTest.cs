@@ -44,8 +44,6 @@ public class TomlConfigServiceTest
         var configService = new TomlConfig(fileSystem, logger);
 
         configService.Settings["user.name"] = "John";
-        configService.Settings["remote.spdx.url"] = "https://spdx.org/licenses/licenses.json";
-        configService.Settings["remote.example.url"] = "https://example.org/licenses";
         configService.Remotes["spdx"] = new() { Url = "https://spdx.org/licenses/licenses.json" };
         configService.Remotes["example"] = new() { Url = "https://example.org/licenses" };
 

@@ -7,7 +7,7 @@ namespace Licensify.CLI.Commands;
 [CliCommand(
     Description = "Manages config",
     Order = 4,
-    Parent = typeof(RootCommand)
+    Parent = typeof(MainCommand)
 )]
 public class ConfigCommand(IConfigService configService) : ConfigKeyArgument
 {

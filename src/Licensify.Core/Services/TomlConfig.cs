@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using Licensify.Core.Interfaces;
+using Licensify.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Tommy;
@@ -70,6 +71,8 @@ public class TomlConfig : IConfigService
 
         foreach (var (key, child) in table.RawTable)
         {
+            if (key == "remote" && prefix == string.Empty) continue;
+
             var newKey = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
 
             if (child is TomlTable childTable)

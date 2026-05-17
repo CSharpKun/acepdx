@@ -1,5 +1,6 @@
 using System.Text;
 using Licensify.Core.Interfaces;
+using Licensify.Core.Models;
 
 namespace Licensify.Core.Services;
 
