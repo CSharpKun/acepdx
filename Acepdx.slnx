@@ -1,0 +1,14 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/Acepdx.CLI/Acepdx.CLI.csproj" />
+    <Project Path="src/Acepdx.Core/Acepdx.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Acepdx.Tests.Core/Acepdx.Tests.Core.csproj" />
+  </Folder>
+</Solution>
