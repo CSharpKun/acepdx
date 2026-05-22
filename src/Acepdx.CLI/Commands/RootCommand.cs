@@ -1,3 +1,4 @@
+using System.Net;
 using DotMake.CommandLine;
 using Serilog.Events;
 
@@ -14,4 +15,7 @@ public class MainCommand
 
     [CliOption(Description = "Force download and update for operation")]
     public bool NoCache { get; set; }
+
+    [CliOption(Description = "Proxy setting", Required = false)]
+    public WebProxy? Proxy { get; set; }
 }

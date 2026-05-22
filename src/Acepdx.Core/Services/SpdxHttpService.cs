@@ -23,47 +23,53 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ILogg
 
     public async Task<List<LicenseList>> GetLicenseLists(CancellationToken token = default)
     {
-        List<LicenseList> licenses = [];
-        foreach (var remote in config.Remotes)
+        if (config.Remotes.Count == 0) 
         {
-            if (!Uri.TryCreate(remote.Value.Url, UriKind.Absolute, out var url))
-            {
-                _logger.LogWarning("List url {Url} of remote {Remote} is incorrectly formatted - skipping", remote.Value.Url, remote.Key);
-                continue;
-            }
+            throw new NoRemotesFoundException(
+                userMessage: "The config does not contain any remotes. Add one or check your config.",
+                technicalMessage: "Count of the remotes equals to zero"
+            );
+        }
 
+        var tasks = config.Remotes.Select(async remote =>
+        {        
             LicenseList? list = null;
             try
             {
-                list = await httpClient.GetFromJsonAsync<LicenseList>(url, _jsonOptions, token);
+                list = await httpClient.GetFromJsonAsync<LicenseList>(remote.Value.Url, _jsonOptions, token);
             }
             catch (TaskCanceledException ex) when (!token.IsCancellationRequested) 
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}", remote.Key, url, httpClient.Timeout);
-                continue;
+                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}", remote.Key, remote.Value.Url, httpClient.Timeout);
+                return null;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the internet connectivity", remote.Key, url);
-                continue;
+                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the internet connectivity", remote.Key, remote.Value.Url);
+                return null;
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error", remote.Key, url);
-                throw;
+                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error", remote.Key, remote.Value.Url);
+                return null;
             }
 
             if (list is null)
             {
-                _logger.LogWarning("Couldn't get license list for remote {Remote} with url {Url} for unknown reason", remote.Key, url);
-                continue;
+                _logger.LogWarning("Couldn't get license list for remote {Remote} with url {Url} for unknown reason", remote.Key, remote.Value.Url);
+                return null;
             }
+
             list.Remote = remote.Key;
             list.Licenses.ForEach(license => license.Remote = remote.Key);
-            licenses.Add(list);
-        }
+            return list;
+        });
 
-        if (licenses.Count == 0)
+        var lists = (await Task.WhenAll(tasks))
+            .OfType<LicenseList>()
+            .ToList();
+
+        if (lists.Count == 0)
         {
             throw new AllRemotesTriedException(
                 userMessage: "All remotes were tried, check your internet connection and try again.",
@@ -71,7 +77,7 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ILogg
             );
         }
 
-        return licenses;
+        return lists;
     }
 
     public async Task<License?> GetLicense(LicenseListEntry licenseEntry, CancellationToken token = default)

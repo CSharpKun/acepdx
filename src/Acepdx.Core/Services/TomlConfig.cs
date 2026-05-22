@@ -15,13 +15,8 @@ public class TomlConfig : IConfigService
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<TomlConfig> _logger;
 
-    private static readonly string _folderPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Acepdx"
-    );
-
     private static readonly string _configPath = Path.Combine(
-        _folderPath,
+        AcepdxFolders.Config,
         "config.toml"
     );
 
@@ -29,9 +24,6 @@ public class TomlConfig : IConfigService
     {
         _fileSystem = fileSystem;
         _logger = logger ?? NullLogger<TomlConfig>.Instance;
-
-        if (!_fileSystem.Directory.Exists(_folderPath))
-            _fileSystem.Directory.CreateDirectory(_folderPath);
 
         if (!_fileSystem.File.Exists(_configPath))
         {
@@ -58,9 +50,15 @@ public class TomlConfig : IConfigService
         {
             if (kwp.Value is not TomlTable valueTable || !valueTable.TryGetNode(nameof(SpdxRemote.Url).ToLower(), out var url)) continue;
 
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var typedUrl))
+            {
+                _logger.LogWarning("Url {Url} of remote {Remote} is incorrectly formatted - skipping", url, kwp.Key);
+                continue;
+            }
+
             Remotes[kwp.Key] = new()
             {
-                Url = url
+                Url = typedUrl
             };
         }
     }
@@ -119,14 +117,15 @@ public class TomlConfig : IConfigService
 
         if (!table.TryGetNode("remote", out var remotesTable))
         {
-            remotesTable = table["remote"] = new TomlTable();
+            table["remote"] = new TomlTable();
+            remotesTable = table["remote"];
         }
 
         foreach (var remote in Remotes)
         {
             remotesTable[remote.Key] = new TomlTable()
             {
-                [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url
+                [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url.AbsoluteUri
             };
         }
 

@@ -47,7 +47,7 @@ public class RemoteCommand(IConfigService config)
 
             config.Remotes[Name] = new() 
             { 
-                Url = this.Url.AbsoluteUri
+                Url = this.Url
             }; 
             config.Save();
         }

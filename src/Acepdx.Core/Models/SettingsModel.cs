@@ -8,5 +8,5 @@ public enum VariableType
 
 public class SpdxRemote
 {
-    public required string Url { get; set; }
+    public required Uri Url { get; set; }
 }
