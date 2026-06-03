@@ -6,18 +6,22 @@ namespace Acepdx.Core.Models;
 public partial class LicenseList
 {
     public required List<LicenseListEntry> Licenses { get; init; }
-    [JsonPropertyName("licenseListVersion")] public string? Version { get; init; }
-    public DateTime? ReleaseDate { get; init; }    
-    [JsonIgnore] public string? Remote { get; set; }
+
+    [JsonPropertyName("licenseListVersion")]
+    public string? Version { get; init; }
+    public DateTime? ReleaseDate { get; init; }
+
+    [JsonIgnore]
+    public string? Remote { get; set; }
 }
 
 public partial class LicenseListEntry : ILicense
 {
     public required string Name { get; init; }
     public required string LicenseId { get; init; }
-    
-    /* 
-        I want to switch to XML format as that would be much easier and more correctly 
+
+    /*
+        I want to switch to XML format as that would be much easier and more correctly
         from the point of the SPDX Specification, according to it's annex C.
         But I still didn't figure out what the format of SPDX licenses list for internet will be in V3.
         I know only of a LicenseXml field so I decided to add it here at least for now.
@@ -37,7 +41,8 @@ public partial class LicenseListEntry : ILicense
 
     public IReadOnlyList<string>? SeeAlso { get; init; }
 
-    [JsonIgnore] public string? Remote { get; set; }
+    [JsonIgnore]
+    public string? Remote { get; set; }
 };
 
 public partial class License : ILicense
@@ -48,26 +53,26 @@ public partial class License : ILicense
     public required string StandardLicenseTemplate { get; init; }
 
     public string? StandardLicenseHeaderTemplate { get; init; }
-    public string? LicenseTextHtml { get; init; } 
-    
-    public bool? IsDeprecatedLicenseId { get; init; } 
-    public bool? IsOsiApproved { get; init; } 
-    
-    public IReadOnlyList<CrossReference>? CrossRef { get; init; } 
-    public IReadOnlyList<string>? SeeAlso { get; init; } 
+    public string? LicenseTextHtml { get; init; }
+
+    public bool? IsDeprecatedLicenseId { get; init; }
+    public bool? IsOsiApproved { get; init; }
+
+    public IReadOnlyList<CrossReference>? CrossRef { get; init; }
+    public IReadOnlyList<string>? SeeAlso { get; init; }
 };
 
-public partial class CrossReference 
+public partial class CrossReference
 {
     public required Uri Url { get; init; }
-    
+
     public DateTime? Timestamp { get; init; }
     public string? Match { get; init; }
     public int? Order { get; init; }
 
     public bool? IsValid { get; init; }
     public bool? IsLive { get; init; }
-    public bool? IsWayBackLink { get; init; } 
+    public bool? IsWayBackLink { get; init; }
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

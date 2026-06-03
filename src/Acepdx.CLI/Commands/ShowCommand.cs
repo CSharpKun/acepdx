@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Reflection.Metadata.Ecma335;
-using Acepdx.Core;
 using Acepdx.Core.Exceptions;
 using Acepdx.Core.Extensions;
 using Acepdx.Core.Interfaces;
@@ -36,27 +33,31 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
         }
         catch (NoRemotesFoundException ex)
         {
-            logger.LogWarning(ex, "There are no existing remotes.");
-            AnsiConsole.Markup($"[bold yellow]{ex.UserMessage}[/]");
+            logger.LogWarning(ex, "There are no remotes in the config.");
+            AnsiConsole.Markup(
+                $"[bold yellow]No remotes are assigned in the config file. Please add at least one.[/]"
+            );
             return;
         }
         catch (AllRemotesTriedException ex)
         {
-            logger.LogCritical(ex, "All remotes were tried.");
-            AnsiConsole.MarkupLine($"[bold red]{ex.UserMessage}[/]");
+            logger.LogCritical(ex, "Every remote in the config failed to respond.");
+            AnsiConsole.MarkupLine(
+                $"[bold red]All remotes failed to respond, check your internet connection and try again.[/]"
+            );
             return;
         }
 
         var entries = lists
-                .SelectMany(list => list.Licenses)
-                .GetRelevantLicenses(LicenseId, DeprecatedId)
-                .ToList();
+            .SelectMany(list => list.Licenses)
+            .GetRelevantLicenses(LicenseId, DeprecatedId)
+            .ToList();
 
         var entry = entries.Count switch
         {
             1 => entries.First(),
             > 1 => AskForLicense(entries),
-            _ => null
+            _ => null,
         };
 
         if (entry is null)
@@ -70,12 +71,17 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
 
         if (license is null)
         {
-            AnsiConsole.MarkupLine($"[bold red]Couldn't get {LicenseId} license. Check your internet connection.[/]");
+            AnsiConsole.MarkupLine(
+                $"[bold red]Couldn't get {LicenseId} license. Check your internet connection.[/]"
+            );
             return;
         }
 
-        foreach (var prop in typeof(License).GetProperties()
-            .Where(p => p.PropertyType == typeof(string) && p.CanWrite))
+        foreach (
+            var prop in typeof(License)
+                .GetProperties()
+                .Where(p => p.PropertyType == typeof(string) && p.CanWrite)
+        )
         {
             if (prop.GetValue(license) is string value)
                 prop.SetValue(license, Markup.Escape(value));
@@ -83,34 +89,48 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
 
         var renderList = new List<IRenderable>
         {
-            new Panel(license.LicenseText)
-            {
-                Border = BoxBorder.Double
-            }
+            new Panel(license.LicenseText) { Border = BoxBorder.Double },
         };
 
         if (license.IsDeprecatedLicenseId is not null)
-            renderList.Add(new Markup($"Deprecated License Id: {GetStatusColorTag(entry.IsDeprecatedLicenseId ?? false, reverse: true) + entry.IsDeprecatedLicenseId}[/]"));
+            renderList.Add(
+                new Markup(
+                    $"Deprecated License Id: {GetStatusColorTag(entry.IsDeprecatedLicenseId ?? false, reverse: true) + entry.IsDeprecatedLicenseId}[/]"
+                )
+            );
 
         if (license.IsOsiApproved is not null)
-            renderList.Add(new Markup($"Osi Approved: {GetStatusColorTag(license.IsOsiApproved ?? false) + license.IsOsiApproved}[/]"));
+            renderList.Add(
+                new Markup(
+                    $"Osi Approved: {GetStatusColorTag(license.IsOsiApproved ?? false) + license.IsOsiApproved}[/]"
+                )
+            );
 
         if (license.CrossRef is not null)
             foreach (var reference in license.CrossRef)
             {
-                var rows = new List<Markup>() {
-                    new($"[bold]Reference URL:[/] [link]{reference.Url}[/]")
+                var rows = new List<Markup>()
+                {
+                    new($"[bold]Reference URL:[/] [link]{reference.Url}[/]"),
                 };
 
                 if (reference.IsLive is not null)
-                    rows.Add(new($"[bold]Live:[/] {GetStatusColorTag(reference.IsLive ?? false) + reference.IsLive}[/]"));
+                    rows.Add(
+                        new(
+                            $"[bold]Live:[/] {GetStatusColorTag(reference.IsLive ?? false) + reference.IsLive}[/]"
+                        )
+                    );
 
                 if (reference.IsValid is not null)
-                    rows.Add(new($"[bold]Valid:[/] {GetStatusColorTag(reference.IsValid ?? false) + reference.IsValid}[/]"));
+                    rows.Add(
+                        new(
+                            $"[bold]Valid:[/] {GetStatusColorTag(reference.IsValid ?? false) + reference.IsValid}[/]"
+                        )
+                    );
 
                 rows.AddRange([
                     new Markup($"[bold]Match:[/] \"{reference.Match}\""),
-                    new Markup($"[bold]Timestamp:[/] {reference.Timestamp}")
+                    new Markup($"[bold]Timestamp:[/] {reference.Timestamp}"),
                 ]);
 
                 renderList.Add(new Panel(new Rows(rows)));
@@ -119,7 +139,7 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
         var panel = new Panel(new Rows(renderList))
         {
             Header = new PanelHeader($"[bold]{entry.Name}[/] ({entry.LicenseId})"),
-            Border = BoxBorder.Rounded
+            Border = BoxBorder.Rounded,
         };
 
         AnsiConsole.Write(panel);
@@ -136,12 +156,15 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
         return AnsiConsole.Prompt<LicenseListEntry>(
             new SelectionPrompt<LicenseListEntry>()
                 .Title("Multiple licenses found:")
-                .UseConverter(entry => duplicates.Contains(entry.LicenseId) 
-                    ? $"{entry.LicenseId} (from {entry.Remote})" 
-                    : entry.LicenseId)
+                .UseConverter(entry =>
+                    duplicates.Contains(entry.LicenseId)
+                        ? $"{entry.LicenseId} (from {entry.Remote})"
+                        : entry.LicenseId
+                )
                 .AddChoices(entries)
         );
     }
 
-    private static string GetStatusColorTag(bool condition, bool reverse = false) => condition ^ reverse ? "[green]" : "[red]";
+    private static string GetStatusColorTag(bool condition, bool reverse = false) =>
+        condition ^ reverse ? "[green]" : "[red]";
 }

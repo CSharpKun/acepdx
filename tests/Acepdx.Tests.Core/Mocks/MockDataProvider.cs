@@ -11,5 +11,6 @@ public class MockDataProvider : ISpdxTemplateProvider
 
     public bool GetOptional(ReadOnlySpan<char> optionalText) => AddOptional;
 
-    public string GetVariable(VariableType type, string? defaultValue, Regex? validation) => VariableAnswers.GetValueOrDefault(type) ?? "default";
+    public string GetVariable(VariableType type, string? defaultValue, Regex? validation) =>
+        VariableAnswers.GetValueOrDefault(type) ?? "default";
 }

@@ -1,9 +1,9 @@
 namespace Acepdx.Core.Models;
 
-public enum VariableType 
+public enum VariableType
 {
     Copyright,
-    Other
+    Other,
 }
 
 public class SpdxRemote

@@ -1,78 +1,58 @@
-using DotMake.CommandLine;
 using Acepdx.Core.Interfaces;
+using DotMake.CommandLine;
 using Spectre.Console;
 
 namespace Acepdx.CLI.Commands;
 
-[CliCommand(
-    Description = "Manages remote vaults",
-    Order = 5,
-    Parent = typeof(MainCommand)
-)]
+[CliCommand(Description = "Manages remote vaults", Order = 5, Parent = typeof(MainCommand))]
 public class RemoteCommand(IConfigService config)
 {
     public async Task RunAsync()
-    { 
-        foreach (var remote in config.Remotes) AnsiConsole.MarkupLine(remote.Key);
+    {
+        foreach (var remote in config.Remotes)
+            AnsiConsole.MarkupLine(remote.Key);
     }
 
     [CliCommand(Description = "Add remote vault")]
-    public class AddCommand(IConfigService config) 
+    public class AddCommand(IConfigService config)
     {
-        [CliArgument(
-            Description = "Name of the remote",
-            Required = true
-        )]
+        [CliArgument(Description = "Name of the remote", Required = true)]
         public string Name { get; set; } = null!;
 
-        [CliArgument(
-            Description = "Url of the remote",
-            Required = true
-        )]
+        [CliArgument(Description = "Url of the remote", Required = true)]
         public Uri Url { get; set; } = null!;
 
-        public async Task RunAsync() 
+        public async Task RunAsync()
         {
-            if (config.Remotes.ContainsKey(Name)) 
+            if (config.Remotes.ContainsKey(Name))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {Name} already exists.[/]");
                 return;
             }
 
-            if (!Url.IsAbsoluteUri) 
+            if (!Url.IsAbsoluteUri)
             {
                 AnsiConsole.MarkupLine("[red]Incorrect Url.[/]");
                 return;
             }
 
-            config.Remotes[Name] = new() 
-            { 
-                Url = this.Url
-            }; 
+            config.Remotes[Name] = new() { Url = this.Url };
             config.Save();
         }
     }
 
-    [CliCommand(
-        Description = "Rename remote vault"
-    )]
-    public class RenameCommand(IConfigService config) 
+    [CliCommand(Description = "Rename remote vault")]
+    public class RenameCommand(IConfigService config)
     {
-        [CliArgument(
-            Description = "Old name of the remote",
-            Required = true
-        )]
+        [CliArgument(Description = "Old name of the remote", Required = true)]
         public string OldName { get; set; } = null!;
 
-        [CliArgument(
-            Description = "New name of the remote",
-            Required = true
-        )]
+        [CliArgument(Description = "New name of the remote", Required = true)]
         public string NewName { get; set; } = null!;
 
-        public async Task RunAsync() 
+        public async Task RunAsync()
         {
-            if (!config.Remotes.TryGetValue(OldName, out var remote)) 
+            if (!config.Remotes.TryGetValue(OldName, out var remote))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {OldName} does not exist.[/]");
                 return;
@@ -84,20 +64,15 @@ public class RemoteCommand(IConfigService config)
         }
     }
 
-    [CliCommand(
-        Description = "Removes remote vault"
-    )]
-    public class RemoveCommand(IConfigService config) 
+    [CliCommand(Description = "Removes remote vault")]
+    public class RemoveCommand(IConfigService config)
     {
-        [CliArgument(
-            Description = "Name of the remote",
-            Required = true
-        )]
+        [CliArgument(Description = "Name of the remote", Required = true)]
         public string Name { get; set; } = null!;
 
-        public async Task RunAsync() 
+        public async Task RunAsync()
         {
-            if (!config.Remotes.Remove(Name)) 
+            if (!config.Remotes.Remove(Name))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {Name} does not exist.[/]");
                 return;

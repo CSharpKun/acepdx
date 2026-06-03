@@ -9,54 +9,88 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Acepdx.Core.Services;
 
-[UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "JsonSerializerContext should be provided in jsonOptions")]
-[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "JsonSerializerContext should be provided in jsonOptions")]
-public class SpdxHttpService(HttpClient httpClient, IConfigService config, ILogger<SpdxHttpService>? logger = null) : ILicenseHttpService
+[UnconditionalSuppressMessage(
+    "Trimming",
+    "IL2026",
+    Justification = "JsonSerializerContext should be provided in jsonOptions"
+)]
+[UnconditionalSuppressMessage(
+    "AOT",
+    "IL3050",
+    Justification = "JsonSerializerContext should be provided in jsonOptions"
+)]
+public class SpdxHttpService(
+    HttpClient httpClient,
+    IConfigService config,
+    ILogger<SpdxHttpService>? logger = null
+) : ILicenseHttpService
 {
-    private readonly ILogger<SpdxHttpService> _logger = logger ?? NullLogger<SpdxHttpService>.Instance;
+    private readonly ILogger<SpdxHttpService> _logger =
+        logger ?? NullLogger<SpdxHttpService>.Instance;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        TypeInfoResolver = AcepdxJsonSerializerContext.Default
+        TypeInfoResolver = AcepdxJsonSerializerContext.Default,
     };
 
     public async Task<List<LicenseList>> GetLicenseLists(CancellationToken token = default)
     {
-        if (config.Remotes.Count == 0) 
+        if (config.Remotes.Count == 0)
         {
-            throw new NoRemotesFoundException(
-                userMessage: "The config does not contain any remotes. Add one or check your config.",
-                technicalMessage: "Count of the remotes equals to zero"
-            );
+            throw new NoRemotesFoundException("Count of the remotes equals to zero");
         }
 
         var tasks = config.Remotes.Select(async remote =>
-        {        
+        {
             LicenseList? list = null;
             try
             {
-                list = await httpClient.GetFromJsonAsync<LicenseList>(remote.Value.Url, _jsonOptions, token);
+                list = await httpClient.GetFromJsonAsync<LicenseList>(
+                    remote.Value.Url,
+                    _jsonOptions,
+                    token
+                );
             }
-            catch (TaskCanceledException ex) when (!token.IsCancellationRequested) 
+            catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}", remote.Key, remote.Value.Url, httpClient.Timeout);
+                _logger.LogWarning(
+                    ex,
+                    "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}",
+                    remote.Key,
+                    remote.Value.Url,
+                    httpClient.Timeout
+                );
                 return null;
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the internet connectivity", remote.Key, remote.Value.Url);
+                _logger.LogWarning(
+                    ex,
+                    "Couldn't get license list for remote {Remote} with url {Url} because of the internet connectivity",
+                    remote.Key,
+                    remote.Value.Url
+                );
                 return null;
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning(ex, "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error", remote.Key, remote.Value.Url);
+                _logger.LogWarning(
+                    ex,
+                    "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error",
+                    remote.Key,
+                    remote.Value.Url
+                );
                 return null;
             }
 
             if (list is null)
             {
-                _logger.LogWarning("Couldn't get license list for remote {Remote} with url {Url} for unknown reason", remote.Key, remote.Value.Url);
+                _logger.LogWarning(
+                    "Couldn't get license list for remote {Remote} with url {Url} for unknown reason",
+                    remote.Key,
+                    remote.Value.Url
+                );
                 return null;
             }
 
@@ -65,23 +99,25 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ILogg
             return list;
         });
 
-        var lists = (await Task.WhenAll(tasks))
-            .OfType<LicenseList>()
-            .ToList();
+        var lists = (await Task.WhenAll(tasks)).OfType<LicenseList>().ToList();
 
         if (lists.Count == 0)
         {
-            throw new AllRemotesTriedException(
-                userMessage: "All remotes were tried, check your internet connection and try again.",
-                technicalMessage: "Licenses list is empty"
-            );
+            throw new AllRemotesTriedException("Licenses list is empty");
         }
 
         return lists;
     }
 
-    public async Task<License?> GetLicense(LicenseListEntry licenseEntry, CancellationToken token = default)
+    public async Task<License?> GetLicense(
+        LicenseListEntry licenseEntry,
+        CancellationToken token = default
+    )
     {
-        return await httpClient.GetFromJsonAsync<License>(licenseEntry.DetailsUrl, _jsonOptions, token);
+        return await httpClient.GetFromJsonAsync<License>(
+            licenseEntry.DetailsUrl,
+            _jsonOptions,
+            token
+        );
     }
 }

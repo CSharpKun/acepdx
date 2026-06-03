@@ -1,10 +1,10 @@
 namespace Acepdx.Core.Exceptions;
 
-public class AllRemotesTriedException : AcepdxException 
+public class AllRemotesTriedException : AcepdxException
 {
-    public AllRemotesTriedException(string userMessage, string technicalMessage) 
-        : base(userMessage, technicalMessage) {}
+    public AllRemotesTriedException(string message, Exception ex)
+        : base(message, ex) { }
 
-    public AllRemotesTriedException(string userMessage, string technicalMessage, Exception inner) 
-        : base(userMessage, technicalMessage, inner) {}
+    public AllRemotesTriedException(string message)
+        : base(message) { }
 }

@@ -15,10 +15,7 @@ public class TomlConfig : IConfigService
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<TomlConfig> _logger;
 
-    private static readonly string _configPath = Path.Combine(
-        AcepdxFolders.Config,
-        "config.toml"
-    );
+    private static readonly string _configPath = Path.Combine(AcepdxFolders.Config, "config.toml");
 
     public TomlConfig(IFileSystem fileSystem, ILogger<TomlConfig>? logger = null)
     {
@@ -44,22 +41,31 @@ public class TomlConfig : IConfigService
 
         Settings = FlattenToml(root);
 
-        if (!root.TryGetNode("remote", out var remoteNode) || remoteNode is not TomlTable remoteTable) return;
+        if (
+            !root.TryGetNode("remote", out var remoteNode)
+            || remoteNode is not TomlTable remoteTable
+        )
+            return;
 
         foreach (var kwp in remoteTable.RawTable)
         {
-            if (kwp.Value is not TomlTable valueTable || !valueTable.TryGetNode(nameof(SpdxRemote.Url).ToLower(), out var url)) continue;
+            if (
+                kwp.Value is not TomlTable valueTable
+                || !valueTable.TryGetNode(nameof(SpdxRemote.Url).ToLower(), out var url)
+            )
+                continue;
 
             if (!Uri.TryCreate(url, UriKind.Absolute, out var typedUrl))
             {
-                _logger.LogWarning("Url {Url} of remote {Remote} is incorrectly formatted - skipping", url, kwp.Key);
+                _logger.LogWarning(
+                    "Url {Url} of remote {Remote} is incorrectly formatted - skipping",
+                    url,
+                    kwp.Key
+                );
                 continue;
             }
 
-            Remotes[kwp.Key] = new()
-            {
-                Url = typedUrl
-            };
+            Remotes[kwp.Key] = new() { Url = typedUrl };
         }
     }
 
@@ -69,7 +75,8 @@ public class TomlConfig : IConfigService
 
         foreach (var (key, child) in table.RawTable)
         {
-            if (key == "remote" && prefix == string.Empty) continue;
+            if (key == "remote" && prefix == string.Empty)
+                continue;
 
             var newKey = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
 
@@ -108,7 +115,7 @@ public class TomlConfig : IConfigService
                     currentTable = tomlTable;
                     continue;
                 }
-                currentTable[key] = new TomlTable(); 
+                currentTable[key] = new TomlTable();
                 currentTable = (TomlTable)currentTable[key];
             }
 
@@ -125,7 +132,7 @@ public class TomlConfig : IConfigService
         {
             remotesTable[remote.Key] = new TomlTable()
             {
-                [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url.AbsoluteUri
+                [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url.AbsoluteUri,
             };
         }
 

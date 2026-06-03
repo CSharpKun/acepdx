@@ -1,10 +1,10 @@
 namespace Acepdx.Core.Exceptions;
 
-public class NoRemotesFoundException : AcepdxException 
+public sealed class NoRemotesFoundException : AcepdxException
 {
-    public NoRemotesFoundException(string userMessage, string technicalMessage) 
-        : base(userMessage, technicalMessage) {}
+    public NoRemotesFoundException(string message, Exception ex)
+        : base(message, ex) { }
 
-    public NoRemotesFoundException(string userMessage, string technicalMessage, Exception inner) 
-        : base(userMessage, technicalMessage, inner) {}
+    public NoRemotesFoundException(string message)
+        : base(message) { }
 }
