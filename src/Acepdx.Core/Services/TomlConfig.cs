@@ -3,7 +3,9 @@ using Acepdx.Core.Interfaces;
 using Acepdx.Core.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Tommy;
+using Tomlyn;
+using Tomlyn.Model;
+using Tomlyn.Serialization;
 
 namespace Acepdx.Core.Services;
 
@@ -16,12 +18,15 @@ public class TomlConfig : IConfigService
     private readonly ILogger<TomlConfig> _logger;
 
     private readonly string _configPath;
+    private readonly TomlMetadataStore? _lastMetadata = new();
+    private readonly TomlSerializerOptions _tomlOptions;
 
     public TomlConfig(IFileSystem fileSystem, IFolders folders, ILogger<TomlConfig>? logger = null)
     {
         _fileSystem = fileSystem;
         _logger = logger ?? NullLogger<TomlConfig>.Instance;
         _configPath = Path.Combine(folders.Config, "config.toml");
+        _tomlOptions = new() { MetadataStore = _lastMetadata };
 
         if (!_fileSystem.File.Exists(_configPath))
         {
@@ -38,35 +43,38 @@ public class TomlConfig : IConfigService
     {
         using var stream = _fileSystem.File.OpenText(_configPath);
 
-        var root = TOML.Parse(stream);
+        var root = TomlSerializer.Deserialize<TomlTable>(stream, _tomlOptions);
+
+        if (root is null)
+            return;
 
         Settings = FlattenToml(root);
 
         if (
-            !root.TryGetNode("remote", out var remoteNode)
+            !root.TryGetValue("remote", out var remoteNode)
             || remoteNode is not TomlTable remoteTable
         )
             return;
 
-        foreach (var kwp in remoteTable.RawTable)
+        foreach (var (key, value) in remoteTable)
         {
             if (
-                kwp.Value is not TomlTable valueTable
-                || !valueTable.TryGetNode(nameof(SpdxRemote.Url).ToLower(), out var url)
+                value is not TomlTable valueTable
+                || !valueTable.TryGetValue(nameof(SpdxRemote.Url).ToLower(), out var url)
             )
                 continue;
 
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var typedUrl))
+            if (!Uri.TryCreate(url as string, UriKind.Absolute, out var typedUrl))
             {
                 _logger.LogWarning(
                     "Url {Url} of remote {Remote} is incorrectly formatted - skipping",
                     url,
-                    kwp.Key
+                    key
                 );
                 continue;
             }
 
-            Remotes[kwp.Key] = new() { Url = typedUrl };
+            Remotes[key] = new() { Url = typedUrl };
         }
     }
 
@@ -74,7 +82,7 @@ public class TomlConfig : IConfigService
     {
         var result = new Dictionary<string, string>();
 
-        foreach (var (key, child) in table.RawTable)
+        foreach (var (key, child) in table)
         {
             if (key == "remote" && prefix == string.Empty)
                 continue;
@@ -86,9 +94,9 @@ public class TomlConfig : IConfigService
                 foreach (var kv in FlattenToml(childTable, newKey))
                     result[kv.Key] = kv.Value;
             }
-            else if (child is not TomlArray)
+            else if (child is string stringChild)
             {
-                result[newKey] = child;
+                result[newKey] = stringChild;
             }
         }
 
@@ -111,7 +119,7 @@ public class TomlConfig : IConfigService
 
             foreach (var key in keys[..^1])
             {
-                if (currentTable.TryGetNode(key, out var node) && node is TomlTable tomlTable)
+                if (currentTable.TryGetValue(key, out var node) && node is TomlTable tomlTable)
                 {
                     currentTable = tomlTable;
                     continue;
@@ -123,7 +131,7 @@ public class TomlConfig : IConfigService
             currentTable[keys[^1]] = kwp.Value;
         }
 
-        if (!table.TryGetNode("remote", out var remotesTable))
+        if (!table.TryGetValue("remote", out var remotesTable))
         {
             table["remote"] = new TomlTable();
             remotesTable = table["remote"];
@@ -131,14 +139,13 @@ public class TomlConfig : IConfigService
 
         foreach (var remote in Remotes)
         {
-            remotesTable[remote.Key] = new TomlTable()
+            ((TomlTable)remotesTable)[remote.Key] = new TomlTable()
             {
                 [nameof(SpdxRemote.Url).ToLower()] = remote.Value.Url.AbsoluteUri,
             };
         }
 
         using var stream = _fileSystem.File.CreateText(_configPath);
-        table.WriteTo(stream);
-        stream.Flush();
+        TomlSerializer.Serialize(stream, table, _tomlOptions);
     }
 }

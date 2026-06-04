@@ -20,15 +20,6 @@ public partial class LicenseListEntry : ILicense
     public required string Name { get; init; }
     public required string LicenseId { get; init; }
 
-    /*
-        I want to switch to XML format as that would be much easier and more correctly
-        from the point of the SPDX Specification, according to it's annex C.
-        But I still didn't figure out what the format of SPDX licenses list for internet will be in V3.
-        I know only of a LicenseXml field so I decided to add it here at least for now.
-        If you know what it would be, please contact me or write an issue.
-        PRs are also welcomed.
-    */
-
     public Uri? LicenseXml { get; init; }
     public required Uri DetailsUrl { get; init; }
 

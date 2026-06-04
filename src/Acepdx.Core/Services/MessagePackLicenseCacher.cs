@@ -13,7 +13,7 @@ public class MessagePackLicenseCacher(
     IFileSystem fileSystem,
     IFolders folders,
     ILogger<MessagePackLicenseCacher>? logger = null
-) // : ILicenseCacheService
+) //: ILicenseCacheService
 {
     public List<LicenseList> CachedLists { get; set; } = [];
     public List<License> CachedLicenses { get; set; } = [];
