@@ -20,12 +20,9 @@ var logFile = Path.Combine(
     "acepdx.log"
 );
 
-#pragma warning disable CS8604
-
 var logDirectory = Path.GetDirectoryName(logFile);
-Directory.CreateDirectory(logDirectory);
-
-#pragma warning restore CS8604
+if (logDirectory is not null && !Directory.Exists(logDirectory))
+    Directory.CreateDirectory(logDirectory);
 
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Debug()

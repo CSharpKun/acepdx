@@ -1,6 +1,5 @@
 using System.IO.Abstractions;
 using Acepdx.Core.Interfaces;
-using Newtonsoft.Json.Serialization;
 
 namespace Acepdx.Tests.Core.Mocks;
 

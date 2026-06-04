@@ -1,8 +1,7 @@
 ﻿using System.IO.Abstractions.TestingHelpers;
+using Acepdx.Core;
 using Acepdx.Core.Services;
-using Acepdx.Tests.Core.Mocks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 namespace Acepdx.Tests.Core;
@@ -13,7 +12,7 @@ public class TomlConfigServiceTest
     public void SerializationTest()
     {
         var fileSystem = new MockFileSystem();
-        var folders = new MockFolders(fileSystem);
+        var folders = new AcepdxFolders(fileSystem);
         var logger = new Mock<Logger<TomlConfig>>();
         var configService = new TomlConfig(fileSystem, folders, logger.Object);
 
@@ -41,7 +40,7 @@ public class TomlConfigServiceTest
     public void SerializationAndDeserializationTest()
     {
         var fileSystem = new MockFileSystem();
-        var folders = new MockFolders(fileSystem);
+        var folders = new AcepdxFolders(fileSystem);
         var logger = new Mock<Logger<TomlConfig>>();
         var configService = new TomlConfig(fileSystem, folders, logger.Object);
 
