@@ -1,27 +1,21 @@
 ﻿using System.IO.Abstractions.TestingHelpers;
 using Acepdx.Core.Services;
+using Acepdx.Tests.Core.Mocks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 
 namespace Acepdx.Tests.Core;
 
 public class TomlConfigServiceTest
 {
-    private static string ConfigPath =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "acepdx"
-        );
-
-    private static string ConfigFile => Path.Combine(ConfigPath, "config.toml");
-
     [Fact]
     public void SerializationTest()
     {
         var fileSystem = new MockFileSystem();
-        fileSystem.AddDirectory(ConfigPath);
-
-        var logger = new NullLogger<TomlConfig>();
-        var configService = new TomlConfig(fileSystem, logger);
+        var folders = new MockFolders(fileSystem);
+        var logger = new Mock<Logger<TomlConfig>>();
+        var configService = new TomlConfig(fileSystem, folders, logger.Object);
 
         configService.Settings["user.name"] = "John";
         configService.Remotes["spdx"] = new()
@@ -32,7 +26,7 @@ public class TomlConfigServiceTest
 
         configService.Save();
 
-        var content = fileSystem.File.ReadAllText(ConfigFile);
+        var content = fileSystem.File.ReadAllText(Path.Combine(folders.Config, "config.toml"));
 
         Assert.Contains("spdx", content);
         Assert.Contains("https://spdx.org/licenses/licenses.json", content);
@@ -47,10 +41,9 @@ public class TomlConfigServiceTest
     public void SerializationAndDeserializationTest()
     {
         var fileSystem = new MockFileSystem();
-        fileSystem.AddDirectory(ConfigPath);
-
-        var logger = new NullLogger<TomlConfig>();
-        var configService = new TomlConfig(fileSystem, logger);
+        var folders = new MockFolders(fileSystem);
+        var logger = new Mock<Logger<TomlConfig>>();
+        var configService = new TomlConfig(fileSystem, folders, logger.Object);
 
         configService.Settings["user.name"] = "John";
         configService.Remotes["spdx"] = new()
@@ -61,7 +54,7 @@ public class TomlConfigServiceTest
 
         configService.Save();
 
-        var otherConfigService = new TomlConfig(fileSystem, logger);
+        var otherConfigService = new TomlConfig(fileSystem, folders, logger.Object);
 
         Assert.NotEmpty(configService.Settings);
         Assert.NotEmpty(otherConfigService.Settings);
@@ -69,6 +62,11 @@ public class TomlConfigServiceTest
         Assert.NotEmpty(otherConfigService.Remotes);
 
         Assert.Equal(configService.Settings, otherConfigService.Settings);
+        Assert.Equal(
+            configService.Remotes.Keys.OrderBy(k => k),
+            otherConfigService.Remotes.Keys.OrderBy(k => k)
+        );
+
         Assert.Equal(
             configService.Remotes.Keys.OrderBy(k => k),
             otherConfigService.Remotes.Keys.OrderBy(k => k)

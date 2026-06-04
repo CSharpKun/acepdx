@@ -11,12 +11,14 @@ namespace Acepdx.Core.Services;
 
 public class MessagePackLicenseCacher(
     IFileSystem fileSystem,
+    IFolders folders,
     ILogger<MessagePackLicenseCacher>? logger = null
 ) // : ILicenseCacheService
 {
     public List<LicenseList> CachedLists { get; set; } = [];
     public List<License> CachedLicenses { get; set; } = [];
 
+    private readonly IFolders _folders = folders;
     private readonly ILogger<MessagePackLicenseCacher> _logger =
         logger ?? NullLogger<MessagePackLicenseCacher>.Instance;
     private readonly MessagePackSerializer _serializer = new();
@@ -25,14 +27,14 @@ public class MessagePackLicenseCacher(
         where T : IShapeable<T>
     {
         var bytes = _serializer.Serialize(cache);
-        var filePath = Path.Combine(AcepdxFolders.Cache, $"{typeof(T).Name}_{id}");
+        var filePath = Path.Combine(_folders.Cache, $"{typeof(T).Name}_{id}");
         fileSystem.File.WriteAllBytes(filePath, bytes);
     }
 
     private bool TryGetFromCache<T>(string id, [MaybeNull] out T? result)
         where T : IShapeable<T>
     {
-        var filePath = Path.Combine(AcepdxFolders.Cache, $"{typeof(T).Name}_{id}");
+        var filePath = Path.Combine(_folders.Cache, $"{typeof(T).Name}_{id}");
 
         if (!fileSystem.File.Exists(filePath))
         {

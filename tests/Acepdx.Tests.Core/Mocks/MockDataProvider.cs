@@ -4,7 +4,7 @@ using Acepdx.Core.Models;
 
 namespace Acepdx.Tests.Core.Mocks;
 
-public class MockDataProvider : ISpdxTemplateProvider
+public class MockDataProvider : ITemplateProvider
 {
     public Dictionary<VariableType, string> VariableAnswers { get; set; } = [];
     public bool AddOptional { get; set; }

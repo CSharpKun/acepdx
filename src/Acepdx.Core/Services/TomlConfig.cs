@@ -15,12 +15,13 @@ public class TomlConfig : IConfigService
     private readonly IFileSystem _fileSystem;
     private readonly ILogger<TomlConfig> _logger;
 
-    private static readonly string _configPath = Path.Combine(AcepdxFolders.Config, "config.toml");
+    private readonly string _configPath;
 
-    public TomlConfig(IFileSystem fileSystem, ILogger<TomlConfig>? logger = null)
+    public TomlConfig(IFileSystem fileSystem, IFolders folders, ILogger<TomlConfig>? logger = null)
     {
         _fileSystem = fileSystem;
         _logger = logger ?? NullLogger<TomlConfig>.Instance;
+        _configPath = Path.Combine(folders.Config, "config.toml");
 
         if (!_fileSystem.File.Exists(_configPath))
         {

@@ -50,7 +50,8 @@ public partial class License : ILicense
     public required string Name { get; init; }
     public required string LicenseId { get; init; }
     public required string LicenseText { get; init; }
-    public required string StandardLicenseTemplate { get; init; }
+    public string? StandardLicenseTemplate { get; init; }
+    public Uri? LicenseXml { get; init; }
 
     public string? StandardLicenseHeaderTemplate { get; init; }
     public string? LicenseTextHtml { get; init; }

@@ -4,12 +4,14 @@ using Acepdx.Core.Models;
 
 namespace Acepdx.Core.Services;
 
-public class SpdxLegacyLicenseParser(IConfigService configService) : ILicenseParser
+public class LegacyLicenseParser(IConfigService configService) : ILicenseParser
 {
-    private ISpdxTemplateProvider Provider { get; set; } = null!;
+    private ITemplateProvider Provider { get; set; } = null!;
     private StringBuilder Builder { get; set; } = new();
 
-    public string Parse(ISpdxTemplateProvider dataProvider, License license)
+    public bool CanParse(License license) => license.StandardLicenseTemplate is not null;
+
+    public string Parse(ITemplateProvider dataProvider, License license)
     {
         Builder = new();
         Provider = dataProvider;
@@ -60,6 +62,8 @@ public class SpdxLegacyLicenseParser(IConfigService configService) : ILicensePar
 
     private void ParseVariable(ref ReadOnlySpan<char> licenseSpan, int tagEndPos)
     {
+        var nextField = licenseSpan.IndexOf(';');
+
         licenseSpan = licenseSpan[tagEndPos..];
     }
 }

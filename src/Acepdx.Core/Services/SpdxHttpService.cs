@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Xml.Linq;
 using Acepdx.Core.Exceptions;
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Models;
@@ -119,5 +120,13 @@ public class SpdxHttpService(
             _jsonOptions,
             token
         );
+    }
+
+    public async Task<XDocument?> GetXml(ILicense license, CancellationToken token = default)
+    {
+        if (license.LicenseXml is null)
+            return null;
+        var stream = await httpClient.GetStreamAsync(license.LicenseXml, token);
+        return XDocument.Load(stream);
     }
 }

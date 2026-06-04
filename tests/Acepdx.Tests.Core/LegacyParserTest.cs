@@ -4,7 +4,7 @@ using Acepdx.Tests.Core.Mocks;
 
 namespace Acepdx.Tests.Core;
 
-public class SpdxParserTest
+public class LegacyParserTest
 {
     private const string MitTemplate = """
         <<beginOptional>>MIT License<<endOptional>> 
@@ -16,7 +16,7 @@ public class SpdxParserTest
         THE <<var;name="Software-verb";original="SOFTWARE IS";match="SOFTWARE IS|MATERIALS ARE">> PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL <<var;name="copyrightHolder";original="THE AUTHORS OR COPYRIGHT HOLDERS";match=".+">> BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE <<var;name="Software7";original="SOFTWARE";match="SOFTWARE|MATERIALS">> OR THE USE OR OTHER DEALINGS IN THE <<var;name="Software8";original="SOFTWARE";match="SOFTWARE|MATERIALS">>.
         """;
 
-    private static License _license = new()
+    private static readonly License _license = new()
     {
         Name = "MIT License",
         LicenseId = "MIT",

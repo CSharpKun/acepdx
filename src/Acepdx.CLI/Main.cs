@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using System.Reflection;
 using Acepdx.CLI.Commands;
+using Acepdx.Core;
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Services;
 using DotMake.CommandLine;
@@ -22,8 +23,7 @@ var logFile = Path.Combine(
 #pragma warning disable CS8604
 
 var logDirectory = Path.GetDirectoryName(logFile);
-if (!Directory.Exists(logDirectory))
-    Directory.CreateDirectory(logDirectory);
+Directory.CreateDirectory(logDirectory);
 
 #pragma warning restore CS8604
 
@@ -59,15 +59,25 @@ Cli.Ext.ConfigureServices(services =>
     services
         //.AddSingleton<ICacher, MessagePackCacher>()
         .AddSingleton<IConfigService, TomlConfig>()
-        .AddSingleton<ILicenseParser, SpdxLegacyLicenseParser>()
+        .AddTransient<ILicenseParser, LegacyLicenseParser>()
         .AddSingleton<IFileSystem, FileSystem>()
+        .AddSingleton<IFolders, AcepdxFolders>()
         .AddLogging(builder => builder.ClearProviders().AddSerilog())
         .AddHttpClient<ILicenseHttpService, SpdxHttpService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.UserAgent.Add(clientInfo);
         })
-        .ConfigurePrimaryHttpMessageHandler(_ => httpHandler);
+        .ConfigurePrimaryHttpMessageHandler(services =>
+        {
+            var handler = new HttpClientHandler();
+            if (mainCommand.Proxy is not null)
+            {
+                handler.UseProxy = true;
+                handler.Proxy = mainCommand.Proxy;
+            }
+            return handler;
+        });
 });
 
 await Cli.RunAsync<MainCommand>();

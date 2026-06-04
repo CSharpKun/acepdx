@@ -12,7 +12,7 @@ namespace Acepdx.CLI.Commands;
     Parent = typeof(MainCommand)
 )]
 public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService)
-    : ISpdxTemplateProvider
+    : ITemplateProvider
 {
     [CliOption(Description = "Assume yes", Group = "assume", Alias = "-y")]
     public bool AssumeYes { get; set; }

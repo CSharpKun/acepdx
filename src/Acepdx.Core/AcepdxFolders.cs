@@ -1,15 +1,17 @@
+using System.IO.Abstractions;
 using System.Runtime.InteropServices;
+using Acepdx.Core.Interfaces;
 
 namespace Acepdx.Core;
 
-public static class AcepdxFolders
+public class AcepdxFolders : IFolders
 {
     private const string AcepdxName = "acepdx";
 
-    public static string Config { get; }
-    public static string Cache { get; }
+    public string Config { get; }
+    public string Cache { get; }
 
-    static AcepdxFolders()
+    public AcepdxFolders(IFileSystem fileSystem)
     {
         string cacheFolder = Environment.GetFolderPath(
             Environment.SpecialFolder.LocalApplicationData
@@ -37,11 +39,11 @@ public static class AcepdxFolders
         );
         Cache = Path.Combine(cacheFolder, AcepdxName);
 
-        if (!Directory.Exists(Config))
-            Directory.CreateDirectory(Config);
+        if (!fileSystem.Directory.Exists(Config))
+            fileSystem.Directory.CreateDirectory(Config);
 
-        if (!Directory.Exists(Cache))
-            Directory.CreateDirectory(Config);
+        if (!fileSystem.Directory.Exists(Cache))
+            fileSystem.Directory.CreateDirectory(Cache);
 
         return;
     }
