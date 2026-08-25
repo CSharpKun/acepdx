@@ -1,4 +1,5 @@
 using System.Net;
+
 using DotMake.CommandLine;
 
 namespace Acepdx.CLI.Commands;
