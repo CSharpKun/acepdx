@@ -1,5 +1,7 @@
 using Acepdx.Core.Interfaces;
+
 using DotMake.CommandLine;
+
 using Spectre.Console;
 
 namespace Acepdx.CLI.Commands;
@@ -10,7 +12,9 @@ public class RemoteCommand(IConfigService config)
     public async Task RunAsync()
     {
         foreach (var remote in config.Remotes)
+        {
             AnsiConsole.MarkupLine(remote.Key);
+        }
     }
 
     [CliCommand(Description = "Add remote vault")]
@@ -36,7 +40,7 @@ public class RemoteCommand(IConfigService config)
                 return;
             }
 
-            config.Remotes[Name] = new() { Url = this.Url };
+            config.Remotes[Name] = new() { Url = Url };
             config.Save();
         }
     }

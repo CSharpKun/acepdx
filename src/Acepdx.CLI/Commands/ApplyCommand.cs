@@ -1,7 +1,10 @@
 using System.Text.RegularExpressions;
+
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Models;
+
 using DotMake.CommandLine;
+
 using Spectre.Console;
 
 namespace Acepdx.CLI.Commands;
@@ -43,10 +46,10 @@ public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService
         {
             return;
         }
-        else if (entries.Count > 1)
-            entry = AskForLicense(entries);
         else
-            entry = entries.First();
+        {
+            entry = entries.Count > 1 ? AskForLicense(entries) : entries.First();
+        }
 
         var license = await httpService.GetLicense(entry);
 
@@ -60,7 +63,7 @@ public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService
 
     private static LicenseListEntry AskForLicense(List<LicenseListEntry> entries)
     {
-        return AnsiConsole.Prompt<LicenseListEntry>(
+        return AnsiConsole.Prompt(
             new SelectionPrompt<LicenseListEntry>()
                 .Title("Multiple licenses found under the same name, choose:")
                 .UseConverter(entry => $"{entry.LicenseId} (from {entry.Remote})")
@@ -70,7 +73,7 @@ public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService
 
     public string GetVariable(VariableType type, string? defaultValue, Regex? validation)
     {
-        string message = type switch
+        var message = type switch
         {
             VariableType.Copyright => "Enter your name:",
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
@@ -79,7 +82,7 @@ public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService
         while (!validation?.IsMatch(result) ?? false)
         {
             AnsiConsole.Markup("[red]Incorrect data format. Please try again.[/]");
-            result = AnsiConsole.Ask<string>(message, defaultValue ?? "");
+            result = AnsiConsole.Ask(message, defaultValue ?? "");
         }
         return result;
     }
@@ -87,9 +90,15 @@ public class ApplyCommand(ILicenseParser parser, ILicenseHttpService httpService
     public bool GetOptional(ReadOnlySpan<char> optionalText)
     {
         if (AssumeYes)
+        {
             return true;
+        }
+
         if (AssumeNo)
+        {
             return false;
+        }
+
         return AnsiConsole.Ask(
             "Would you like to add this optional part in your license: \""
                 + optionalText.ToString()

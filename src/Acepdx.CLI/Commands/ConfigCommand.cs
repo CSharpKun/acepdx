@@ -1,5 +1,7 @@
 using Acepdx.Core.Interfaces;
+
 using DotMake.CommandLine;
+
 using Spectre.Console;
 
 namespace Acepdx.CLI.Commands;
@@ -16,7 +18,7 @@ public class ConfigCommand(IConfigService configService)
     public string Key { get; set; } = null!;
 
     public async Task RunAsync() =>
-        await new GetCommand(configService) { Key = this.Key }.RunAsync();
+        await new GetCommand(configService) { Key = Key }.RunAsync();
 
     [CliCommand(Description = "Set or create specified key with value.")]
     public class SetCommand(IConfigService configService)
@@ -75,11 +77,17 @@ public class ConfigCommand(IConfigService configService)
         public async Task RunAsync()
         {
             if (!configService.Settings.TryGetValue(Key, out var value))
+            {
                 AnsiConsole.MarkupLine("[red]Key does not exist.[/]");
+            }
             else if (value is null)
+            {
                 value = string.Empty;
+            }
             else
+            {
                 AnsiConsole.WriteLine(value);
+            }
         }
     }
 }

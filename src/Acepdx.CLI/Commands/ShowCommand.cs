@@ -2,8 +2,11 @@ using Acepdx.Core.Exceptions;
 using Acepdx.Core.Extensions;
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Models;
+
 using DotMake.CommandLine;
+
 using Microsoft.Extensions.Logging;
+
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -55,9 +58,8 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
 
         var entry = entries.Count switch
         {
-            1 => entries.First(),
             > 1 => AskForLicense(entries),
-            _ => null,
+            _ => entries.FirstOrDefault(),
         };
 
         if (entry is null)
@@ -84,7 +86,9 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
         )
         {
             if (prop.GetValue(license) is string value)
+            {
                 prop.SetValue(license, Markup.Escape(value));
+            }
         }
 
         var renderList = new List<IRenderable>
@@ -93,20 +97,25 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
         };
 
         if (license.IsDeprecatedLicenseId is not null)
+        {
             renderList.Add(
                 new Markup(
                     $"Deprecated License Id: {GetStatusColorTag(entry.IsDeprecatedLicenseId ?? false, reverse: true) + entry.IsDeprecatedLicenseId}[/]"
                 )
             );
+        }
 
         if (license.IsOsiApproved is not null)
+        {
             renderList.Add(
                 new Markup(
                     $"Osi Approved: {GetStatusColorTag(license.IsOsiApproved ?? false) + license.IsOsiApproved}[/]"
                 )
             );
+        }
 
         if (license.CrossRef is not null)
+        {
             foreach (var reference in license.CrossRef)
             {
                 var rows = new List<Markup>()
@@ -115,18 +124,22 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
                 };
 
                 if (reference.IsLive is not null)
+                {
                     rows.Add(
                         new(
                             $"[bold]Live:[/] {GetStatusColorTag(reference.IsLive ?? false) + reference.IsLive}[/]"
                         )
                     );
+                }
 
                 if (reference.IsValid is not null)
+                {
                     rows.Add(
                         new(
                             $"[bold]Valid:[/] {GetStatusColorTag(reference.IsValid ?? false) + reference.IsValid}[/]"
                         )
                     );
+                }
 
                 rows.AddRange([
                     new Markup($"[bold]Match:[/] \"{reference.Match}\""),
@@ -135,6 +148,7 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
 
                 renderList.Add(new Panel(new Rows(rows)));
             }
+        }
 
         var panel = new Panel(new Rows(renderList))
         {
@@ -153,7 +167,7 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
             .Select(g => g.Key)
             .ToHashSet();
 
-        return AnsiConsole.Prompt<LicenseListEntry>(
+        return AnsiConsole.Prompt(
             new SelectionPrompt<LicenseListEntry>()
                 .Title("Multiple licenses found:")
                 .UseConverter(entry =>

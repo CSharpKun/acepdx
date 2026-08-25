@@ -1,13 +1,17 @@
-﻿using System.IO.Abstractions;
+using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using System.Reflection;
+
 using Acepdx.CLI.Commands;
 using Acepdx.Core;
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Services;
+
 using DotMake.CommandLine;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Spectre;
@@ -22,7 +26,9 @@ var logFile = Path.Combine(
 
 var logDirectory = Path.GetDirectoryName(logFile);
 if (logDirectory is not null && !Directory.Exists(logDirectory))
+{
     Directory.CreateDirectory(logDirectory);
+}
 
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -35,18 +41,13 @@ var loggerConfig = new LoggerConfiguration()
     );
 
 if (mainCommand.Verbose)
+{
     loggerConfig.WriteTo.Spectre(
         outputTemplate: "[{Level:u3}] [{SourceContext}] {Message}{NewLine}{Exception}"
     );
-Log.Logger = loggerConfig.CreateLogger();
-
-var httpHandler = new HttpClientHandler();
-
-if (mainCommand.Proxy is not null)
-{
-    httpHandler.UseProxy = true;
-    httpHandler.Proxy = mainCommand.Proxy;
 }
+
+Log.Logger = loggerConfig.CreateLogger();
 
 var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
 var clientInfo = new ProductInfoHeaderValue("Acepdx", version);
