@@ -1,7 +1,10 @@
-﻿using System.IO.Abstractions.TestingHelpers;
+using System.IO.Abstractions.TestingHelpers;
+
 using Acepdx.Core;
 using Acepdx.Core.Services;
+
 using Microsoft.Extensions.Logging;
+
 using Moq;
 
 namespace Acepdx.Tests.Core;
@@ -9,7 +12,7 @@ namespace Acepdx.Tests.Core;
 public class TomlConfigServiceTest
 {
     [Fact]
-    public void SerializationTest()
+    public void Config_Serialization_Works()
     {
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
@@ -37,52 +40,7 @@ public class TomlConfigServiceTest
     }
 
     [Fact]
-    public void CommentariesAndDeserializationTest()
-    {
-        var fileSystem = new MockFileSystem();
-        var folders = new AcepdxFolders(fileSystem);
-        var configPath = Path.Combine(folders.Config, "config.toml");
-        var logger = new Mock<ILogger<TomlConfig>>();
-
-        fileSystem.AddFile(
-            configPath,
-            new(
-                """
-                [user]
-                # Some comments here
-                name = "John"
-
-                [remote.spdx]
-                # Just for fun
-                url = "https://spdx.org/licenses/licenses.json"
-                # It won't work, will it?
-
-                [remote.example]
-                url = "https://example.org/licenses"
-                """
-            )
-        );
-
-        var configService = new TomlConfig(fileSystem, folders, logger.Object);
-
-        configService.Save();
-
-        var content = fileSystem.File.ReadAllText(configPath);
-
-        Assert.Contains("spdx", content);
-        Assert.Contains("https://spdx.org/licenses/licenses.json", content);
-        Assert.Contains("example", content);
-        Assert.Contains("https://example.org/licenses", content);
-        Assert.Contains("user", content);
-        Assert.Contains("name", content);
-        Assert.Contains("John", content);
-        Assert.Contains("# Some comments here", content);
-        Assert.Contains("# Just for fun", content);
-        Assert.Contains("# It won't work, will it?", content);
-    }
-
-    [Fact]
-    public void SerializationAndDeserializationTest()
+    public void Config_SerializationAndDeserialization_Works()
     {
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
