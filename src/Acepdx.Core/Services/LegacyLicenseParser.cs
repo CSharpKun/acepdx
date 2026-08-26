@@ -13,7 +13,7 @@ public class LegacyLicenseParser(IConfigService configService) : ILicenseParser
 
     public string Parse(ITemplateProvider dataProvider, License license)
     {
-        Builder = new();
+        Builder.Clear();
         Provider = dataProvider;
         var licenseSpan = license.StandardLicenseTemplate.AsSpan();
 
@@ -30,9 +30,18 @@ public class LegacyLicenseParser(IConfigService configService) : ILicenseParser
 
             licenseSpan = licenseSpan[tagPos..];
 
+            var secondTagPos = licenseSpan.IndexOf("<<");
+
             int endPos = licenseSpan.IndexOf(">>");
             if (endPos == -1)
-                throw new FormatException($"Unexcepted unclosed tag at the end of the template.");
+            {
+                throw new FormatException($"Unexpected unclosed tag at the end of the template.");
+            }
+
+            if (secondTagPos < endPos)
+            {
+                throw new FormatException($"Unexpected unclosed tag.");
+            }
 
             switch (licenseSpan[2..endPos])
             {
