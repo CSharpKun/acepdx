@@ -16,7 +16,7 @@ public class LegacyParserTest
         THE <<var;name="Software-verb";original="SOFTWARE IS";match="SOFTWARE IS|MATERIALS ARE">> PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL <<var;name="copyrightHolder";original="THE AUTHORS OR COPYRIGHT HOLDERS";match=".+">> BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE <<var;name="Software7";original="SOFTWARE";match="SOFTWARE|MATERIALS">> OR THE USE OR OTHER DEALINGS IN THE <<var;name="Software8";original="SOFTWARE";match="SOFTWARE|MATERIALS">>.
         """;
 
-    private static readonly License _license = new()
+    private static readonly License ExampleLicense = new()
     {
         Name = "MIT License",
         LicenseId = "MIT",
@@ -31,7 +31,7 @@ public class LegacyParserTest
         var mockConfig = new MockConfig();
         var parser = new LegacyLicenseParser(mockConfig);
 
-        var result = parser.Parse(mockData, _license);
+        var result = parser.Parse(mockData, ExampleLicense);
 
         Assert.DoesNotContain("<<startOptional>>", result);
         Assert.DoesNotContain("<<endOptional>>", result);
@@ -47,7 +47,7 @@ public class LegacyParserTest
         var mockConfig = new MockConfig();
         var parser = new LegacyLicenseParser(mockConfig);
 
-        var result = parser.Parse(mockData, _license);
+        var result = parser.Parse(mockData, ExampleLicense);
 
         Assert.DoesNotContain("<<startOptional>>", result);
         Assert.DoesNotContain("<<endOptional>>", result);
