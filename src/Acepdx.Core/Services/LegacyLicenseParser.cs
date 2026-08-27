@@ -38,7 +38,7 @@ public class LegacyLicenseParser(IConfigService configService) : ILicenseParser
                 throw new FormatException($"Unexpected unclosed tag at the end of the template.");
             }
 
-            if (secondTagPos < endPos)
+            if (secondTagPos > endPos)
             {
                 throw new FormatException($"Unexpected unclosed tag.");
             }
