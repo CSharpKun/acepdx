@@ -66,10 +66,3 @@ public partial class CrossReference
     public bool? IsLive { get; init; }
     public bool? IsWayBackLink { get; init; }
 }
-
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(LicenseList))]
-[JsonSerializable(typeof(LicenseListEntry))]
-[JsonSerializable(typeof(License))]
-[JsonSerializable(typeof(CrossReference))]
-public partial class AcepdxJsonSerializerContext : JsonSerializerContext;
