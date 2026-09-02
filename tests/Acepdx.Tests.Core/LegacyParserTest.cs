@@ -24,8 +24,8 @@ public class LegacyParserTest
         StandardLicenseTemplate = MitTemplate,
     };
 
-    [Fact]
-    public void AppendOptionalParts()
+    [Test]
+    public async Task GivenExampleLicense_WhenAppendingOptionalParts_ThenResultContainsOptionalParts()
     {
         var mockData = new MockDataProvider() { AddOptional = true };
         var mockConfig = new MockConfig();
@@ -33,15 +33,15 @@ public class LegacyParserTest
 
         var result = parser.Parse(mockData, ExampleLicense);
 
-        Assert.DoesNotContain("<<startOptional>>", result);
-        Assert.DoesNotContain("<<endOptional>>", result);
-        Assert.Contains("MIT License", result);
-        Assert.Contains("(including the next paragraph)", result);
-        Assert.Contains("including without limitation on the rights", result);
+        await Assert.That(result).DoesNotContain("<<startOptional>>")
+            .And.DoesNotContain("<<endOptional>>")
+            .And.Contains("MIT License")
+            .And.Contains("(including the next paragraph)")
+            .And.Contains("including without limitation on the rights");
     }
 
-    [Fact]
-    public void RemoveOptionalParts()
+    [Test]
+    public async Task GivenExampleLicense_WhenRemovingOptionalParts_ThenResultDoesNotContainOptionalParts()
     {
         var mockData = new MockDataProvider() { AddOptional = false };
         var mockConfig = new MockConfig();
@@ -49,10 +49,10 @@ public class LegacyParserTest
 
         var result = parser.Parse(mockData, ExampleLicense);
 
-        Assert.DoesNotContain("<<startOptional>>", result);
-        Assert.DoesNotContain("<<endOptional>>", result);
-        Assert.DoesNotContain("MIT License", result);
-        Assert.DoesNotContain("(including the next paragraph)", result);
-        Assert.DoesNotContain("including without limitation on the rights", result);
+        await Assert.That(result).DoesNotContain("<<startOptional>>")
+            .And.DoesNotContain("<<endOptional>>")
+            .And.DoesNotContain("MIT License")
+            .And.DoesNotContain("(including the next paragraph)")
+            .And.DoesNotContain("including without limitation on the rights");
     }
 }

@@ -5,10 +5,18 @@ namespace Acepdx.Tests.Core.Mocks;
 
 public class MockConfig : IConfigService
 {
-    public Dictionary<string, SpdxRemote> Remotes { get; set; } = [];
-    public Dictionary<string, string> Settings { get; set; } = [];
+    public Task<T?> Get<T>(string path, T? defaultValue = default)
+    {
+        throw new NotImplementedException();
+    }
 
-    public void Save() { }
+    public Task Set<T>(string path, T value)
+    {
+        throw new NotImplementedException();
+    }
 
-    public void Load() { }
+    public Task Unset(string path)
+    {
+        throw new NotImplementedException();
+    }
 }

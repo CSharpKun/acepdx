@@ -1,82 +1,82 @@
 using System.IO.Abstractions.TestingHelpers;
 
 using Acepdx.Core;
+using Acepdx.Core.Models;
 using Acepdx.Core.Services;
 
 using Microsoft.Extensions.Logging;
 
-using Moq;
-
 namespace Acepdx.Tests.Core;
 
-public class TomlConfigServiceTest
+public class JsonConfigServiceTest
 {
-    [Fact]
-    public void Config_Serialization_Works()
+    [Test]
+    public async Task GivenBaseElements_WhenConfigSerialized_ThenFileWrittenCorrectly()
     {
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
-        var logger = new Mock<ILogger<TomlConfig>>();
-        var configService = new TomlConfig(fileSystem, folders, logger.Object);
+        var logger = Mock.Of<ILogger<JsonConfig>>();
+        var configService = new JsonConfig(fileSystem, folders, logger.Object);
 
-        configService.Settings["user.name"] = "John";
-        configService.Remotes["spdx"] = new()
+
+        await configService.Set("user.name", "John");
+        await configService.Set<SpdxRemote>("remote.spdx", new()
         {
             Url = new("https://spdx.org/licenses/licenses.json"),
-        };
-        configService.Remotes["example"] = new() { Url = new("https://example.org/licenses") };
+        });
 
-        configService.Save();
+        await configService.Set<SpdxRemote>("remote.example", new()
+        {
+            Url = new("https://example.org/licenses"),
+        });
 
-        var content = fileSystem.File.ReadAllText(Path.Combine(folders.Config, "config.toml"));
+        var content = fileSystem.File.ReadAllText(Path.Combine(folders.Config, "config.json"));
 
-        Assert.Contains("spdx", content);
-        Assert.Contains("https://spdx.org/licenses/licenses.json", content);
-        Assert.Contains("example", content);
-        Assert.Contains("https://example.org/licenses", content);
-        Assert.Contains("user", content);
-        Assert.Contains("name", content);
-        Assert.Contains("John", content);
+
+        await Assert.That(content).Contains("spdx")
+            .And.Contains("https://spdx.org/licenses/licenses.json")
+            .And.Contains("example")
+            .And.Contains("https://example.org/licenses")
+            .And.Contains("user")
+            .And.Contains("name")
+            .And.Contains("John");
     }
 
-    [Fact]
-    public void Config_SerializationAndDeserialization_Works()
+    [Test]
+    public async Task GivenBaseElements_WhenConfigSerializedAndDeserialized_ThenDataConsistent()
     {
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
-        var logger = new Mock<ILogger<TomlConfig>>();
-        var configService = new TomlConfig(fileSystem, folders, logger.Object);
+        var logger = Mock.Of<ILogger<JsonConfig>>();
+        var configService = new JsonConfig(fileSystem, folders, logger.Object);
 
-        configService.Settings["user.name"] = "John";
-        configService.Remotes["spdx"] = new()
+        await configService.Set("user.name", "John");
+        await configService.Set<SpdxRemote>("remote.spdx", new()
         {
             Url = new("https://spdx.org/licenses/licenses.json"),
-        };
-        configService.Remotes["example"] = new() { Url = new("https://example.org/licenses") };
+        });
 
-        configService.Save();
-
-        var otherConfigService = new TomlConfig(fileSystem, folders, logger.Object);
-
-        Assert.NotEmpty(configService.Settings);
-        Assert.NotEmpty(otherConfigService.Settings);
-        Assert.NotEmpty(configService.Remotes);
-        Assert.NotEmpty(otherConfigService.Remotes);
-
-        Assert.Equal(configService.Settings, otherConfigService.Settings);
-        Assert.Equal(
-            configService.Remotes.Keys.OrderBy(k => k),
-            otherConfigService.Remotes.Keys.OrderBy(k => k)
-        );
-
-        Assert.Equal(
-            configService.Remotes.Keys.OrderBy(k => k),
-            otherConfigService.Remotes.Keys.OrderBy(k => k)
-        );
-
-        foreach (var key in configService.Remotes.Keys)
+        await configService.Set<SpdxRemote>("remote.example", new()
         {
-            Assert.Equal(configService.Remotes[key].Url, otherConfigService.Remotes[key].Url);
+            Url = new("https://example.org/licenses"),
+        });
+
+        var otherConfigService = new JsonConfig(fileSystem, folders, logger.Object);
+
+        var originalRemotes = await configService.Get<Dictionary<string, SpdxRemote>>("remote");
+        var targetRemotes = await otherConfigService.Get<Dictionary<string, SpdxRemote>>("remote");
+
+        var originalUsername = await configService.Get<string>("user.name");
+        var targetUsername = await otherConfigService.Get<string>("user.name");
+
+        await Assert.That(originalRemotes).IsNotNull();
+        await Assert.That(targetRemotes).IsNotNull();
+
+        await Assert.That(targetUsername).IsEqualTo(originalUsername);
+
+        foreach (var key in originalRemotes.Keys)
+        {
+            await Assert.That(targetRemotes[key]).IsEqualTo(originalRemotes[key]);
         }
     }
 }
