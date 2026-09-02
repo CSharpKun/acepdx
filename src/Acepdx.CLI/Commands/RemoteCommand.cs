@@ -4,6 +4,9 @@ using DotMake.CommandLine;
 
 using Spectre.Console;
 
+using SpdxRemotes = System.Collections.Generic.Dictionary<string, Acepdx.Core.Models.SpdxRemote>;
+
+
 namespace Acepdx.CLI.Commands;
 
 [CliCommand(Description = "Manages remote vaults", Order = 5, Parent = typeof(MainCommand))]
@@ -11,7 +14,15 @@ public class RemoteCommand(IConfigService config)
 {
     public async Task RunAsync()
     {
-        foreach (var remote in config.Remotes)
+        var remotes = await config.Get<SpdxRemotes>("remote");
+
+        if (remotes is null) 
+        {
+            AnsiConsole.MarkupLine($"[red]There are no remotes.[/]");
+            return;
+        }
+
+        foreach (var remote in remotes)
         {
             AnsiConsole.MarkupLine(remote.Key);
         }
@@ -28,7 +39,9 @@ public class RemoteCommand(IConfigService config)
 
         public async Task RunAsync()
         {
-            if (config.Remotes.ContainsKey(Name))
+            var remotes = await config.Get<SpdxRemotes>("remote") ?? [];
+
+            if (remotes.ContainsKey(Name))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {Name} already exists.[/]");
                 return;
@@ -40,8 +53,11 @@ public class RemoteCommand(IConfigService config)
                 return;
             }
 
-            config.Remotes[Name] = new() { Url = Url };
-            config.Save();
+            remotes[Name] = new() 
+            { 
+                Url = Url 
+            };
+            await config.Set<SpdxRemotes>("remote", remotes);
         }
     }
 
@@ -56,15 +72,17 @@ public class RemoteCommand(IConfigService config)
 
         public async Task RunAsync()
         {
-            if (!config.Remotes.TryGetValue(OldName, out var remote))
+            var remotes = await config.Get<SpdxRemotes>("remote") ?? [];
+
+            if (!remotes.TryGetValue(OldName, out var remote))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {OldName} does not exist.[/]");
                 return;
             }
 
-            config.Remotes[NewName] = remote;
-            config.Remotes.Remove(OldName);
-            config.Save();
+            remotes[NewName] = remote;
+            remotes.Remove(OldName);
+            await config.Set<SpdxRemotes>("remote", remotes);
         }
     }
 
@@ -76,13 +94,15 @@ public class RemoteCommand(IConfigService config)
 
         public async Task RunAsync()
         {
-            if (!config.Remotes.Remove(Name))
+            var remotes = await config.Get<SpdxRemotes>("remote") ?? [];
+
+            if (!remotes.Remove(Name))
             {
                 AnsiConsole.MarkupLine($"[red]Remote {Name} does not exist.[/]");
                 return;
             }
 
-            config.Save();
+            await config.Set<SpdxRemotes>("remote", remotes);
         }
     }
 }

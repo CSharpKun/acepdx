@@ -36,8 +36,7 @@ public class ConfigCommand(IConfigService configService)
 
         public async Task RunAsync()
         {
-            configService.Settings[Key] = Value;
-            configService.Save();
+            await configService.Set(Key, Value);
         }
     }
 
@@ -54,12 +53,7 @@ public class ConfigCommand(IConfigService configService)
 
         public async Task RunAsync()
         {
-            if (configService.Settings.Remove(Key))
-            {
-                configService.Save();
-                return;
-            }
-            AnsiConsole.MarkupLine("[red]Key does not exist.[/]");
+            await configService.Unset(Key);
         }
     }
 
@@ -76,13 +70,11 @@ public class ConfigCommand(IConfigService configService)
 
         public async Task RunAsync()
         {
-            if (!configService.Settings.TryGetValue(Key, out var value))
+            var value = await configService.Get<string>(Key);
+            
+            if (value is null)
             {
                 AnsiConsole.MarkupLine("[red]Key does not exist.[/]");
-            }
-            else if (value is null)
-            {
-                value = string.Empty;
             }
             else
             {

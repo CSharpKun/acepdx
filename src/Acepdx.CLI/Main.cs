@@ -56,7 +56,7 @@ Cli.Ext.ConfigureServices(services =>
 {
     services
         //.AddSingleton<ICacher, MessagePackCacher>()
-        .AddSingleton<IConfigService, TomlConfig>()
+        .AddSingleton<IConfigService, JsonConfig>()
         .AddTransient<ILicenseParser, LegacyLicenseParser>()
         .AddSingleton<IFileSystem, FileSystem>()
         .AddSingleton<IFolders, AcepdxFolders>()
