@@ -1,9 +1,10 @@
 using System.Text.Json.Serialization;
+
 using Acepdx.Core.Interfaces;
 
 namespace Acepdx.Core.Models;
 
-public partial class LicenseList
+public partial record LicenseList
 {
     public required List<LicenseListEntry> Licenses { get; init; }
 
@@ -15,7 +16,7 @@ public partial class LicenseList
     public string? Remote { get; set; }
 }
 
-public partial class LicenseListEntry : ILicense
+public partial record LicenseListEntry : ILicense
 {
     public required string Name { get; init; }
     public required string LicenseId { get; init; }
@@ -36,7 +37,7 @@ public partial class LicenseListEntry : ILicense
     public string? Remote { get; set; }
 };
 
-public partial class License : ILicense
+public partial record License : ILicense
 {
     public required string Name { get; init; }
     public required string LicenseId { get; init; }
@@ -54,7 +55,7 @@ public partial class License : ILicense
     public IReadOnlyList<string>? SeeAlso { get; init; }
 };
 
-public partial class CrossReference
+public partial record CrossReference
 {
     public required Uri Url { get; init; }
 

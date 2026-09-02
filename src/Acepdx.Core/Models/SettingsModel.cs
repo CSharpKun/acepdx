@@ -6,7 +6,7 @@ public enum VariableType
     Other,
 }
 
-public class SpdxRemote
+public record SpdxRemote
 {
     public required Uri Url { get; set; }
 }
