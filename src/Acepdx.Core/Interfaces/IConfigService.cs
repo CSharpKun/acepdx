@@ -1,11 +1,8 @@
-using Acepdx.Core.Models;
-
 namespace Acepdx.Core.Interfaces;
 
 public interface IConfigService
 {
-    public Dictionary<string, SpdxRemote> Remotes { get; set; }
-    public Dictionary<string, string> Settings { get; set; }
-    public void Save();
-    public void Load();
+    Task<T?> Get<T>(string path, T? defaultValue = default);
+    Task Set<T>(string path, T value);
+    Task Unset(string path);
 }
