@@ -1,5 +1,5 @@
 using Acepdx.Core.Models;
-using Acepdx.Core.Services;
+using Acepdx.Core.Licensing;
 using Acepdx.Tests.Core.Mocks;
 
 namespace Acepdx.Tests.Core;

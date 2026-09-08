@@ -2,7 +2,7 @@ using System.IO.Abstractions.TestingHelpers;
 
 using Acepdx.Core;
 using Acepdx.Core.Models;
-using Acepdx.Core.Services;
+using Acepdx.Core.Licensing;
 
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +16,7 @@ public class JsonConfigServiceTest
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
         var logger = Mock.Of<ILogger<JsonConfig>>();
-        var configService = new JsonConfig(fileSystem, folders, logger.Object);
+        var configService = await JsonConfig.LoadConfig(fileSystem, folders, logger.Object);
 
 
         await configService.Set("user.name", "John");
@@ -48,7 +48,7 @@ public class JsonConfigServiceTest
         var fileSystem = new MockFileSystem();
         var folders = new AcepdxFolders(fileSystem);
         var logger = Mock.Of<ILogger<JsonConfig>>();
-        var configService = new JsonConfig(fileSystem, folders, logger.Object);
+        var configService = await JsonConfig.LoadConfig(fileSystem, folders, logger.Object);
 
         await configService.Set("user.name", "John");
         await configService.Set<SpdxRemote>("remote.spdx", new()
@@ -61,7 +61,7 @@ public class JsonConfigServiceTest
             Url = new("https://example.org/licenses"),
         });
 
-        var otherConfigService = new JsonConfig(fileSystem, folders, logger.Object);
+        var otherConfigService = await JsonConfig.LoadConfig(fileSystem, folders, logger.Object);
 
         var originalRemotes = await configService.Get<Dictionary<string, SpdxRemote>>("remote");
         var targetRemotes = await otherConfigService.Get<Dictionary<string, SpdxRemote>>("remote");
