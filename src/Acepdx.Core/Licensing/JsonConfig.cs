@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -10,9 +8,8 @@ using Acepdx.Core.Models;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualBasic;
 
-namespace Acepdx.Core.Services;
+namespace Acepdx.Core.Licensing;
 
 [UnconditionalSuppressMessage(
     "Trimming",
@@ -42,29 +39,40 @@ public sealed partial class JsonConfig : IConfigService
         TypeInfoResolver = AcepdxJsonSerializerContext.Default,
     };
 
-    public JsonConfig(IFileSystem fileSystem, IFolders folders, ILogger<JsonConfig>? logger = null)
+    public static async Task<JsonConfig> LoadConfig(IFileSystem fileSystem, IFolders folders, ILogger<JsonConfig>? entryLogger = null, CancellationToken token = default)
+    {
+        var configPath = Path.Combine(folders.Config, "config.json");
+        var logger = entryLogger ?? NullLogger<JsonConfig>.Instance;
+
+        JsonNode rootNode;
+
+        if (!fileSystem.File.Exists(configPath))
+        {
+            rootNode = new JsonObject();
+        }
+        else
+        {
+            try
+            {
+                using var stream = fileSystem.File.OpenRead(configPath);
+                rootNode = await JsonNode.ParseAsync(stream, cancellationToken: token) ?? new JsonObject();
+            }
+            catch (JsonException jsonException)
+            {
+                logger.LogError(jsonException, "Malformed JSON in the config directory, using new entry");
+                rootNode = new JsonObject();
+            }
+        }
+
+        return new(fileSystem, configPath, rootNode, logger);
+    }
+
+    private JsonConfig(IFileSystem fileSystem, string configPath, JsonNode rootNode, ILogger<JsonConfig>? logger)
     {
         _fileSystem = fileSystem;
+        _configPath = configPath;
+        _rootNode = rootNode;
         _logger = logger ?? NullLogger<JsonConfig>.Instance;
-        _configPath = Path.Combine(folders.Config, "config.json");
-
-        if (!_fileSystem.File.Exists(_configPath))
-        {
-            _rootNode = new JsonObject();
-            return;
-        }
-
-        using var stream = _fileSystem.File.OpenRead(_configPath);
-
-        var root = JsonNode.Parse(stream);
-
-        if (root is null)
-        {
-            _rootNode = new JsonObject();
-            return;
-        }
-
-        _rootNode = root;
     }
 
     public async Task<T?> Get<T>(string path, T? defaultValue = default)

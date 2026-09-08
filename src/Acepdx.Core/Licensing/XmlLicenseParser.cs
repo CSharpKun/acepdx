@@ -1,7 +1,7 @@
 using Acepdx.Core.Interfaces;
 using Acepdx.Core.Models;
 
-namespace Acepdx.Core.Services;
+namespace Acepdx.Core.Licensing;
 
 public class XmlLicenseParser(IConfigService config) : ILicenseParser
 {
