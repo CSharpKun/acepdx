@@ -79,4 +79,31 @@ public class JsonConfigServiceTest
             await Assert.That(targetRemotes[key]).IsEqualTo(originalRemotes[key]);
         }
     }
+
+    [Test]
+    public async Task GivenBaseElements_WhenConfigValueUnset_ThenValueDoesNotExist()
+    {
+        var fileSystem = new MockFileSystem();
+        var folders = new AcepdxFolders(fileSystem);
+        var logger = Mock.Of<ILogger<JsonConfig>>();
+        var configService = await JsonConfig.LoadConfig(fileSystem, folders, logger.Object);
+
+        await configService.Set("user.name", "John");
+        await configService.Set<SpdxRemote>("remote.spdx", new()
+        {
+            Url = new("https://spdx.org/licenses/licenses.json"),
+        });
+
+        var originalRemote = await configService.Get<SpdxRemote>("remote.spdx");
+        var originalUsername = await configService.Get<string>("user.name");
+
+        await configService.Unset("user.name");
+        await configService.Unset("remote.spdx");
+
+        var unsetRemote = await configService.Get<SpdxRemote>("remote.spdx");
+        var unsetUsername = await configService.Get<string>("user.name");
+
+        await Assert.That(unsetUsername).IsNotEqualTo(originalUsername).And.IsNull();
+        await Assert.That(unsetRemote).IsNotEqualTo(originalRemote).And.IsNull();
+    }
 }
