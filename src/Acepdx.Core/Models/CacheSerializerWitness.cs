@@ -6,4 +6,5 @@ namespace Acepdx.Core.Models;
 [GenerateShapeFor<LicenseListEntry>]
 [GenerateShapeFor<License>]
 [GenerateShapeFor<CrossReference>]
+[GenerateShapeFor<CachedData<LicenseList>>]
 internal partial class CacheSerializerWitness;
