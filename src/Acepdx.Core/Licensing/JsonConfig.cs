@@ -36,7 +36,7 @@ public sealed partial class JsonConfig : IConfigService
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        TypeInfoResolver = AcepdxJsonSerializerContext.Default,
+        TypeInfoResolver = ConfigJsonSerializerContext.Default,
     };
 
     public static async Task<JsonConfig> LoadConfig(IFileSystem fileSystem, IFolders folders, ILogger<JsonConfig>? entryLogger = null, CancellationToken token = default)

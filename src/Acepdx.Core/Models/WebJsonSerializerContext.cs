@@ -7,6 +7,4 @@ namespace Acepdx.Core.Models;
 [JsonSerializable(typeof(LicenseListEntry))]
 [JsonSerializable(typeof(License))]
 [JsonSerializable(typeof(CrossReference))]
-[JsonSerializable(typeof(SpdxRemote))]
-[JsonSerializable(typeof(Dictionary<string, SpdxRemote>))]
-internal partial class AcepdxJsonSerializerContext : JsonSerializerContext;
+internal partial class WebJsonSerializerContext : JsonSerializerContext;

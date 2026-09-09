@@ -23,7 +23,7 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        TypeInfoResolver = AcepdxJsonSerializerContext.Default,
+        TypeInfoResolver = WebJsonSerializerContext.Default,
     };
 
     public async Task<License?> GetLicense(
