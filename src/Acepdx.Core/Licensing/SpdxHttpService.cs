@@ -1,6 +1,7 @@
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -76,22 +77,10 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
     private async Task<LicenseList?> GetLicenseList(KeyValuePair<string, SpdxRemote> remote, CancellationToken token = default)
     {
         LicenseList? list;
-        var key = GetCacheKey(remote.Value.Url);
 
         try
         {
-            var cachedList = await cacheProvider.GetAsync<CachedData<LicenseList>>(key, token);
-
-            var response = await Probe(remote.Value.Url, cachedList, token);
-
-            if (response is null)
-            {
-                return cachedList.Value;
-            }
-
-            list = await response.Content.ReadFromJsonAsync<LicenseList>(JsonOptions, token);
-
-
+            list = await DownloadAndCache<LicenseList?>(remote.Value.Url, token);
         }
         catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
         {
@@ -145,18 +134,42 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
         return list;
     }
 
-    private async Task<HttpResponseMessage?> Probe(Uri url, CacheInfo cacheInfo, CancellationToken token = default)
+    private async Task<T?> DownloadAndCache<T>(Uri targetUri, CancellationToken token = default)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        if (cacheInfo is not null)
+        var key = GetCacheKey(targetUri);
+
+        var cachedData = await cacheProvider.GetAsync<CachedData<T>>(key, token);
+
+        var request = new HttpRequestMessage(HttpMethod.Get, targetUri);
+
+        if (cachedData is not null)
         {
-            request.Headers.Add("If-Modified-Since", cacheInfo.LastModified.ToString("R"));
-            request.Headers.Add("If-None-Match", cacheInfo.ETag);
+            request.Headers.IfModifiedSince = cachedData.LastModified;
+
+            if (cachedData.ETag is not null)
+            {
+                request.Headers.IfNoneMatch.Add(cachedData.ETag);
+            }
         }
 
         var response = await httpClient.SendAsync(request, token);
 
-        return response;
+        if (response is null || response.StatusCode is HttpStatusCode.NotModified)
+        {
+            return cachedData is not null ? cachedData.Value : default;
+        }
+
+        var data = await response.Content.ReadFromJsonAsync<T>(JsonOptions, token);
+
+        if (data is null)
+        {
+            return default;
+        }
+
+        CachedData<T> cacheData = new(data, response.Headers.ETag, response.Content.Headers.LastModified);
+        await cacheProvider.SetAsync<CachedData<T>>(key, cacheData, token);
+
+        return data;
     }
 
     private static string GetCacheKey(Uri uri)
@@ -166,7 +179,5 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
         return Convert.ToHexString(hash).ToLowerInvariant() + ".cache";
     }
 
-    private record CachedData<T>(T Value, string ETag, DateTime LastModified) : CacheInfo(ETag, LastModified);
-
-    private record CacheInfo(string ETag, DateTime LastModified);
+    private sealed record CachedData<T>(T Value, EntityTagHeaderValue? ETag, DateTimeOffset? LastModified);
 }
