@@ -27,7 +27,7 @@ namespace Acepdx.Core.Licensing;
     "IL3050",
     Justification = "JsonSerializerContext provided in JsonOptions"
 )]
-public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICacheProvider cacheProvider, ILogger<SpdxHttpService>? logger = null) : ILicenseHttpService
+public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigService config, ICacheProvider cacheProvider, ILogger<SpdxHttpService>? logger = null) : ILicenseHttpService
 {
     private readonly ILogger<SpdxHttpService> _logger =
         logger ?? NullLogger<SpdxHttpService>.Instance;
@@ -84,43 +84,23 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
         }
         catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
         {
-            _logger.LogWarning(
-                ex,
-                "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}",
-                remote.Key,
-                remote.Value.Url,
-                httpClient.Timeout
-            );
+            CouldNotGetLicenseListTimeout(ex, remote.Key, remote.Value.Url, httpClient.Timeout);
             return null;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(
-                ex,
-                "Couldn't get license list for remote {Remote} with url {Url} because of the internet connectivity",
-                remote.Key,
-                remote.Value.Url
-            );
+            CouldNotGetLicenseListInternet(ex, remote.Key, remote.Value.Url);
             return null;
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(
-                ex,
-                "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error",
-                remote.Key,
-                remote.Value.Url
-            );
+            CouldNotGetLicenseListJson(ex, remote.Key, remote.Value.Url);
             return null;
         }
 
         if (list is null)
         {
-            _logger.LogWarning(
-                "Couldn't get license list for remote {Remote} with url {Url} for unknown reason",
-                remote.Key,
-                remote.Value.Url
-            );
+            CouldNotGetLicenseListUnknown(remote.Key, remote.Value.Url);
             return null;
         }
 
@@ -156,7 +136,12 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
 
         if (response is null || response.StatusCode is HttpStatusCode.NotModified)
         {
-            return cachedData is not null ? cachedData.Value : default;
+            if (cachedData is not null) 
+            {
+                CacheHit();
+                return cachedData.Value;
+            }
+            return default;
         }
 
         var data = await response.Content.ReadFromJsonAsync<T>(JsonOptions, token);
@@ -179,5 +164,18 @@ public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICach
         return Convert.ToHexString(hash).ToLowerInvariant() + ".cache";
     }
 
-    private sealed record CachedData<T>(T Value, EntityTagHeaderValue? ETag, DateTimeOffset? LastModified);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't get license list for remote {Remote} with url {Url} for unknown reason")]
+    private partial void CouldNotGetLicenseListUnknown(string remote, Uri url);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't get license list for remote {Remote} with url {Url} because of the JSON serialization error")]
+    private partial void CouldNotGetLicenseListJson(JsonException exception, string remote, Uri url);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't get license list for remote {Remote} with url {Url} because of the problems with internet or server")]
+    private partial void CouldNotGetLicenseListInternet(HttpRequestException exception, string remote, Uri url);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't get license list for remote {Remote} with url {Url} because of the timeout {Timeout}")]
+    private partial void CouldNotGetLicenseListTimeout(TaskCanceledException exception, string remote, Uri url, TimeSpan timeout);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cache hit!")]
+    private partial void CacheHit();
 }
