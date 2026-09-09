@@ -9,4 +9,4 @@ namespace Acepdx.Core.Models;
 [JsonSerializable(typeof(CrossReference))]
 [JsonSerializable(typeof(SpdxRemote))]
 [JsonSerializable(typeof(Dictionary<string, SpdxRemote>))]
-public partial class AcepdxJsonSerializerContext : JsonSerializerContext;
+internal partial class AcepdxJsonSerializerContext : JsonSerializerContext;
