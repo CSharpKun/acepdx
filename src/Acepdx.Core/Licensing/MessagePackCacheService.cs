@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.Text;
 
 using Acepdx.Core.Interfaces;
+using Acepdx.Core.Models;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -27,7 +28,10 @@ public sealed partial class MessagePackCacheService(IFileSystem fileSystem, IFol
         try
         {
             using var stream = fileSystem.File.OpenRead(path);
-            return await _serializer.DeserializeAsync<T>(stream, cancellationToken: token);
+
+            var typeShape = CacheSerializerWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<T>();
+
+            return await _serializer.DeserializeAsync<T>(stream, typeShape, cancellationToken: token);
         }
         catch (FileNotFoundException)
         {
@@ -40,7 +44,8 @@ public sealed partial class MessagePackCacheService(IFileSystem fileSystem, IFol
     {
         var path = GetNormalizedPath(key);
         using var stream = fileSystem.File.OpenWrite(path);
-        await _serializer.SerializeAsync<T>(stream, in value, cancellationToken: token);
+        var typeShape = CacheSerializerWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<T>();
+        await _serializer.SerializeAsync<T>(stream, value, typeShape, cancellationToken: token);
     }
 
     private string GetNormalizedPath(string key)
