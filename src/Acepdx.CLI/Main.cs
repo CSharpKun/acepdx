@@ -5,7 +5,7 @@ using System.Reflection;
 using Acepdx.CLI.Commands;
 using Acepdx.Core;
 using Acepdx.Core.Interfaces;
-using Acepdx.Core.Services;
+using Acepdx.Core.Licensing;
 
 using DotMake.CommandLine;
 
@@ -52,12 +52,18 @@ Log.Logger = loggerConfig.CreateLogger();
 var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3);
 var clientInfo = new ProductInfoHeaderValue("Acepdx", version);
 
-Cli.Ext.ConfigureServices(services =>
+Cli.Ext.ConfigureServices(services => 
 {
     services
-        //.AddSingleton<ICacher, MessagePackCacher>()
-        .AddSingleton<IConfigService, JsonConfig>()
-        .AddTransient<ILicenseParser, LegacyLicenseParser>()
+        .AddSingleton<ICacheProvider, MessagePackCacheService>()
+        .AddSingleton<IConfigService, JsonConfig>((serviceProvider) => 
+        {
+            var fs = serviceProvider.GetRequiredService<IFileSystem>();
+            var folders = serviceProvider.GetRequiredService<IFolders>();
+            var logger = serviceProvider.GetRequiredService<ILogger<JsonConfig>>();
+            return JsonConfig.LoadConfig(fs, folders, logger).Result;
+        })
+        .AddSingleton<ILicenseParser, LegacyLicenseParser>()
         .AddSingleton<IFileSystem, FileSystem>()
         .AddSingleton<IFolders, AcepdxFolders>()
         .AddLogging(builder => builder.ClearProviders().AddSerilog())
