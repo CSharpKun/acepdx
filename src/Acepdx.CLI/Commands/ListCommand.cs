@@ -15,7 +15,7 @@ public class ListCommand(ILogger<ListCommand> logger, ILicenseHttpService httpSe
 {
     public async Task RunAsync()
     {
-        List<LicenseList>? lists = null;
+        LicenseList[]? lists = null;
 
         try
         {

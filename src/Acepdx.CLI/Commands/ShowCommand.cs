@@ -28,7 +28,7 @@ public class ShowCommand(ILicenseHttpService httpService, ILogger<ShowCommand> l
 
     public async Task RunAsync()
     {
-        List<LicenseList>? lists;
+        LicenseList[]? lists;
 
         try
         {
