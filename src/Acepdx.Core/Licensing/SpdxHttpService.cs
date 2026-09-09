@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -15,6 +16,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Acepdx.Core.Licensing;
 
+[UnconditionalSuppressMessage(
+    "Trimming",
+    "IL2026",
+    Justification = "JsonSerializerContext provided in JsonOptions"
+)]
+[UnconditionalSuppressMessage(
+    "AOT",
+    "IL3050",
+    Justification = "JsonSerializerContext provided in JsonOptions"
+)]
 public class SpdxHttpService(HttpClient httpClient, IConfigService config, ICacheProvider cacheProvider, ILogger<SpdxHttpService>? logger = null) : ILicenseHttpService
 {
     private readonly ILogger<SpdxHttpService> _logger =
