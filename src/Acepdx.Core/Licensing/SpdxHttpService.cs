@@ -40,17 +40,18 @@ public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigServic
 
     public async Task<License?> GetLicense(
         LicenseListEntry licenseEntry,
+        bool noCache = false,
         CancellationToken token = default
     )
     {
-        return await httpClient.GetFromJsonAsync<License>(
+        return await DownloadAndCache<License>(
             licenseEntry.DetailsUrl,
-            JsonOptions,
+            noCache,
             token
         );
     }
 
-    public async Task<LicenseList[]> GetLicenseLists(CancellationToken token = default)
+    public async Task<LicenseList[]> GetLicenseLists(bool noCache = false, CancellationToken token = default)
     {
         var remotes = await config.Get<Dictionary<string, SpdxRemote>>("remote");
 
@@ -59,7 +60,7 @@ public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigServic
             throw new NoRemotesFoundException("Count of the remotes equals to zero");
         }
 
-        var tasks = remotes.Select(remote => GetLicenseList(remote, token));
+        var tasks = remotes.Select(remote => GetLicenseList(remote, noCache, token));
 
         var results = await Task.WhenAll(tasks);
 
@@ -74,13 +75,13 @@ public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigServic
         return XDocument.Load(stream);
     }
 
-    private async Task<LicenseList?> GetLicenseList(KeyValuePair<string, SpdxRemote> remote, CancellationToken token = default)
+    private async Task<LicenseList?> GetLicenseList(KeyValuePair<string, SpdxRemote> remote, bool noCache, CancellationToken token = default)
     {
         LicenseList? list;
 
         try
         {
-            list = await DownloadAndCache<LicenseList?>(remote.Value.Url, token);
+            list = await DownloadAndCache<LicenseList?>(remote.Value.Url, noCache, token);
         }
         catch (TaskCanceledException ex) when (!token.IsCancellationRequested)
         {
@@ -114,13 +115,18 @@ public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigServic
         return list;
     }
 
-    private async Task<T?> DownloadAndCache<T>(Uri targetUri, CancellationToken token = default)
+    private async Task<T?> DownloadAndCache<T>(Uri targetUri, bool noCache, CancellationToken token = default)
     {
         var key = GetCacheKey(targetUri);
 
-        var cachedData = await cacheProvider.GetAsync<CachedData<T>>(key, token);
-
         var request = new HttpRequestMessage(HttpMethod.Get, targetUri);
+
+        CachedData<T>? cachedData = null; 
+        
+        if (!noCache)
+        {
+            cachedData = await cacheProvider.GetAsync<CachedData<T>>(key, token);
+        }
 
         if (cachedData is not null)
         {
@@ -134,14 +140,10 @@ public sealed partial class SpdxHttpService(HttpClient httpClient, IConfigServic
 
         var response = await httpClient.SendAsync(request, token);
 
-        if (response is null || response.StatusCode is HttpStatusCode.NotModified)
-        {
-            if (cachedData is not null) 
+        if (response.StatusCode is HttpStatusCode.NotModified && cachedData is not null)
             {
                 CacheHit();
                 return cachedData.Value;
-            }
-            return default;
         }
 
         var data = await response.Content.ReadFromJsonAsync<T>(JsonOptions, token);
